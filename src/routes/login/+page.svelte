@@ -1,0 +1,104 @@
+<script>
+    import { user } from '$lib/userStore'; 
+    import { goto } from '$app/navigation';
+
+    let email = '';
+    let password = '';
+    let errorMessage = '';
+
+    async function handleLogin() {
+        errorMessage = '';
+        
+        try {
+            // Aqui definimos a 'response' chamando a tua API
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                user.set(result.user); 
+                // Em vez de '/', agora mandamos para '/dashboard'
+                goto('/dashboard'); 
+            } else {
+                errorMessage = result.message;
+            }
+        } catch (error) {
+            errorMessage = 'Erro ao ligar ao servidor. Verifica se o MySQL está ativo.';
+        }
+    }
+</script>
+
+<main class="auth-page">
+    <div class="auth-card">
+        <h1 class="hero-title">Login</h1>
+        <p class="hero-tagline">Entra para gerires as tuas reservas.</p>
+
+        {#if errorMessage}
+            <p style="color: #e94560; margin-bottom: 1rem; font-weight: bold;">{errorMessage}</p>
+        {/if}
+
+        <form on:submit|preventDefault={handleLogin} class="auth-form">
+            <label>
+                Email
+                <input type="email" bind:value={email} required />
+            </label>
+
+            <label>
+                Palavra-passe
+                <input type="password" bind:value={password} required />
+            </label>
+
+            <button type="submit" class="call-to-action">Entrar</button>
+        </form>
+
+        <p class="auth-footer">Ainda não tens conta? <a href="/registo">Registar</a></p>
+    </div>
+</main>
+
+<style>
+    /* Usa o mesmo estilo que tinhas na página de registo para manter a consistência */
+    .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(45deg, #1a1a2e, #0f3460);
+    }
+    .auth-card {
+        background: rgba(10, 10, 20, 0.6);
+        padding: 40px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 400px;
+        color: #e0e0e0;
+    }
+    .hero-title { margin-bottom: 10px; }
+    .auth-form label { display: block; margin-top: 15px; }
+    .auth-form input { 
+        width: 100%; 
+        padding: 12px; 
+        margin-top: 5px; 
+        border-radius: 8px; 
+        border: 1px solid #3f3f5f;
+        background: rgba(255,255,255,0.05);
+        color: white;
+    }
+    .call-to-action {
+        width: 100%;
+        margin-top: 25px;
+        padding: 12px;
+        border-radius: 50px;
+        border: 2px solid #e94560;
+        background: none;
+        color: #e94560;
+        cursor: pointer;
+    }
+    .call-to-action:hover {
+        background: #e94560;
+        color: white;
+    }
+</style>
