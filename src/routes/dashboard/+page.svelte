@@ -6,7 +6,7 @@
 
     let siteName = "Gestão de Reservas de Lugares"; 
 
-    // Segurança: se não houver utilizador logado no store, volta para o login
+    // se não houver utilizador logado no store, volta para o login
     onMount(() => {
         if (!$user) {
             goto('/login');
@@ -57,7 +57,7 @@
 </footer>
 
 <style>
-    /* Importante: Mantém as variáveis e estilos base para o design ficar igual */
+    /* Mantém as variáveis e estilos base  */
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
@@ -83,11 +83,24 @@
         padding: 0;
     }
 
-    .header .nav li { margin-left: 30px; }
-    .header .nav a { color: var(--text-light); text-decoration: none; }
+    .header .nav li { 
+        margin-left: 30px; 
+    }
 
-    .user-greeting { color: var(--text-light); font-size: 1.1em; }
-    .user-greeting span { color: var(--secondary-color); font-weight: bold; }
+    .header .nav a { 
+        color: var(--text-light); 
+        text-decoration: none; 
+    }
+
+    .user-greeting { 
+        color: var(--text-light); 
+        font-size: 1.1em; 
+    }
+
+    .user-greeting span { 
+        color: var(--secondary-color); 
+        font-weight: bold; 
+    }
 
     .logout-btn {
         background: none;
@@ -113,8 +126,17 @@
         text-align: center;
     }
 
-    .hero-title { font-size: 3.5em; color: var(--text-light); margin-bottom: 10px; }
-    .hero-tagline { font-size: 1.4em; color: var(--text-muted); margin-bottom: 30px; }
+    .hero-title { 
+        font-size: 3.5em; 
+        color: var(--text-light); 
+        margin-bottom: 10px; 
+    }
+
+    .hero-tagline { 
+        font-size: 1.4em; 
+        color: var(--text-muted); 
+        margin-bottom: 30px; 
+    }
 
     .call-to-action {
         background: none;

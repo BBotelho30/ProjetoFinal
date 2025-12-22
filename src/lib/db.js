@@ -13,7 +13,6 @@ const pool = mysql.createPool({
 
 export async function query(sql, params = []) {
     try {
-        // O erro no 'execute' deve desaparecer com o @ts-nocheck no topo
         const [rows] = await pool.execute(sql, params);
         return rows;
     } catch (err) {

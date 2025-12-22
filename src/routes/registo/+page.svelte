@@ -106,8 +106,15 @@
         text-align:left;
     }
 
-    .hero-title{ margin: 0 0 6px; font-size:2em }
-    .hero-tagline{ margin: 0 0 18px; color: var(--text-muted) }
+    .hero-title{ 
+        margin: 0 0 6px; 
+        font-size:2em 
+    }
+
+    .hero-tagline{ 
+        margin: 0 0 18px; 
+        color: var(--text-muted) 
+    }
 
     .auth-form label{
         display:block;
@@ -151,6 +158,13 @@
         color: var(--background-dark);
     }
 
-    .auth-footer{ margin-top:14px; color:var(--text-muted); }
-    .auth-footer a{ color:var(--text-light); text-decoration:underline }
+    .auth-footer{ 
+        margin-top:14px; 
+        color:var(--text-muted); 
+    }
+
+    .auth-footer a{ 
+        color:var(--text-light); 
+        text-decoration:underline 
+    }
 </style>

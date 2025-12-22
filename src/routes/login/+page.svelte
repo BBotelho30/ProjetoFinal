@@ -10,7 +10,6 @@
         errorMessage = '';
         
         try {
-            // Aqui definimos a 'response' chamando a tua API
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -20,9 +19,18 @@
             const result = await response.json();
 
             if (result.success) {
+                // Guarda os dados do utilizador no store
                 user.set(result.user); 
-                // Em vez de '/', agora mandamos para '/dashboard'
-                goto('/dashboard'); 
+
+                // O IF que verifica o tipo de utilizador para redirecionar
+                if (result.user.tipo === 'admin') {
+                    // Se for admin, vai para a página de gestão
+                    goto('/admin');
+                } else {
+                    // Se for cliente, vai para a página de reservas
+                    goto('/dashboard');
+                }
+                
             } else {
                 errorMessage = result.message;
             }
@@ -60,7 +68,6 @@
 </main>
 
 <style>
-    /* Usa o mesmo estilo que tinhas na página de registo para manter a consistência */
     .auth-page {
         min-height: 100vh;
         display: flex;
@@ -68,6 +75,7 @@
         justify-content: center;
         background: linear-gradient(45deg, #1a1a2e, #0f3460);
     }
+
     .auth-card {
         background: rgba(10, 10, 20, 0.6);
         padding: 40px;
@@ -76,8 +84,15 @@
         max-width: 400px;
         color: #e0e0e0;
     }
-    .hero-title { margin-bottom: 10px; }
-    .auth-form label { display: block; margin-top: 15px; }
+    .hero-title { 
+        margin-bottom: 10px; 
+    }
+
+    .auth-form label { 
+        display: block; 
+        margin-top: 15px;
+    }
+
     .auth-form input { 
         width: 100%; 
         padding: 12px; 
@@ -87,6 +102,7 @@
         background: rgba(255,255,255,0.05);
         color: white;
     }
+
     .call-to-action {
         width: 100%;
         margin-top: 25px;
@@ -97,6 +113,7 @@
         color: #e94560;
         cursor: pointer;
     }
+
     .call-to-action:hover {
         background: #e94560;
         color: white;

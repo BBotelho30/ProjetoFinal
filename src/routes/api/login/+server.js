@@ -8,7 +8,7 @@ export async function POST({ request }) {
         const { email, password } = await request.json();
 
         // Procura o utilizador com o email e password fornecidos
-        // Selecionamos o nome e apelido para poderes usar na mensagem de boas-vindas
+        // Seleciona o nome e apelido para usar na mensagem de boas-vindas
         const sql = `
             SELECT id_utilizador, nome, apelido, tipo 
             FROM Utilizadores 
@@ -18,7 +18,7 @@ export async function POST({ request }) {
         const users = await query(sql, [email, password]);
 
         if (users && users.length > 0) {
-            // Se encontrar o utilizador, enviamos os dados de volta
+            // Se encontrar o utilizador, envia os dados de volta
             return json({ 
                 success: true, 
                 user: users[0] 

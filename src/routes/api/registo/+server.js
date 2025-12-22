@@ -7,15 +7,15 @@ export async function POST({ request }) {
     try {
         const { nome, apelido, email, password } = await request.json();
 
-        // 1. Verificar se o email já existe para evitar duplicados
+        // Verificar se o email já existe para evitar duplicados
         const existing = await query('SELECT id_utilizador FROM Utilizadores WHERE email = ?', [email]);
         
         if (existing && existing.length > 0) {
             return json({ success: false, message: 'Este email já está registado.' }, { status: 400 });
         }
 
-        // 2. Inserir na base de dados
-        // 'cliente' é o tipo padrão conforme o teu script SQL
+        // Insere na base de dados
+        // O cliente é o tipo padrão conforme o script SQL
         const sql = `
             INSERT INTO Utilizadores (nome, apelido, email, password, tipo, data_registo)
             VALUES (?, ?, ?, ?, 'cliente', CURDATE())
