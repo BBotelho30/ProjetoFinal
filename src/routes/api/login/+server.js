@@ -7,24 +7,23 @@ export async function POST({ request }) {
     try {
         const { email, password } = await request.json();
 
-        // Procura o utilizador com o email e password fornecidos
-        // Seleciona o nome e apelido para usar na mensagem de boas-vindas
-        const sql = `
-            SELECT id_utilizador, nome, apelido, tipo 
-            FROM Utilizadores 
-            WHERE email = ? AND password = ?
-        `;
+        // Usamos SELECT * para garantir que trazemos todas as colunas (incluindo o 'tipo')
+        // Certifica-te que a tabela se chama 'Utilizadores' no MySQL
+        const sql = `SELECT * FROM Utilizadores WHERE email = ? AND password = ?`;
         
         const users = await query(sql, [email, password]);
 
         if (users && users.length > 0) {
-            // Se encontrar o utilizador, envia os dados de volta
+            const user = users[0];
+            
+            // Segurança: não enviamos a password de volta para o navegador
+            delete user.password;
+
             return json({ 
                 success: true, 
-                user: users[0] 
+                user: user 
             });
         } else {
-            // Se não encontrar nada, as credenciais estão erradas
             return json({ 
                 success: false, 
                 message: 'Email ou palavra-passe incorretos.' 
@@ -32,7 +31,10 @@ export async function POST({ request }) {
         }
 
     } catch (error) {
-        console.error('Erro no servidor durante o Login:', error);
+        // Este console.log vai aparecer no terminal do teu VS Code. 
+        // Vê lá o que diz, pois ele indica o nome exato do erro.
+        console.error('ERRO DETALHADO NO LOGIN:', error);
+        
         return json({ 
             success: false, 
             message: 'Erro interno ao processar o login.' 
