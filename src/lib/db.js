@@ -1,11 +1,12 @@
 // @ts-nocheck
 import mysql from 'mysql2/promise';
+import { AIVEN_PASSWORD } from '$env/static/private'; 
 
 const pool = mysql.createPool({
     host: 'gestaoreservas-gestaoreservas.e.aivencloud.com',
     port: 27675, 
     user: 'avnadmin',
-    password: 'AVNS_5Bk1v8PCWbMi5YEJiPs', 
+    password: AIVEN_PASSWORD, 
     database: 'GestaoReservas',
     ssl: {
         rejectUnauthorized: false
