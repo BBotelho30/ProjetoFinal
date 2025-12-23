@@ -57,7 +57,6 @@
 </footer>
 
 <style>
-    /* Mantém as variáveis e estilos base  */
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
@@ -66,6 +65,7 @@
         --text-muted: #888;
     }
 
+    /* HEADER IGUAL À LANDING PAGE */
     .header {
         display: flex;
         justify-content: space-between;
@@ -73,40 +73,54 @@
         padding: 20px 40px;
         background-color: var(--primary-color);
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .header .logo {
+        font-size: 1.8em;
+        font-weight: bold;
+        color: var(--text-light);
     }
 
     .header .nav ul {
         list-style: none;
-        display: flex;
-        align-items: center;
         margin: 0;
         padding: 0;
+        display: flex;
+        align-items: center;
     }
 
-    .header .nav li { 
-        margin-left: 30px; 
+    .header .nav li {
+        margin-left: 30px;
     }
 
-    .header .nav a { 
-        color: var(--text-light); 
-        text-decoration: none; 
+    .header .nav a {
+        color: var(--text-light);
+        text-decoration: none;
+        font-size: 1.1em;
+        transition: color 0.3s ease;
     }
 
-    .user-greeting { 
-        color: var(--text-light); 
-        font-size: 1.1em; 
+    .header .nav a:hover {
+        color: var(--secondary-color);
     }
 
-    .user-greeting span { 
-        color: var(--secondary-color); 
-        font-weight: bold; 
+    /* ESTILO DO BOTÃO DE LOGOUT NO NAV */
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        border-left: 1px solid var(--text-muted);
+        padding-left: 20px;
     }
 
     .logout-btn {
         background: none;
         border: 1px solid var(--secondary-color);
         color: var(--secondary-color);
-        padding: 6px 18px;
+        padding: 6px 15px;
         border-radius: 20px;
         cursor: pointer;
         transition: 0.3s;
@@ -117,40 +131,68 @@
         color: white;
     }
 
+    /* HERO SECTION IGUAL À LANDING PAGE */
     .hero-section {
-        min-height: 80vh;
+        flex: 1;
+        width: 100%;
+        min-height: 85vh;
         background: linear-gradient(45deg, var(--background-dark), var(--primary-color));
         display: flex;
         justify-content: center;
         align-items: center;
         text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* EFEITOS DE BRILHO REUTILIZADOS */
+    .hero-glow-1, .hero-glow-2 {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 50%;
+        filter: blur(80px);
+        z-index: 0;
+    }
+
+    .hero-glow-1 { top: -10%; left: -10%; }
+    .hero-glow-2 { bottom: -10%; right: -10%; }
+
+    .hero-content {
+        z-index: 10;
+        max-width: 800px;
+        padding: 20px;
     }
 
     .hero-title { 
         font-size: 3.5em; 
         color: var(--text-light); 
-        margin-bottom: 10px; 
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
     }
 
     .hero-tagline { 
         font-size: 1.4em; 
         color: var(--text-muted); 
-        margin-bottom: 30px; 
+        margin-bottom: 40px; 
     }
 
+    /* BOTÃO CALL TO ACTION IGUAL */
     .call-to-action {
         background: none;
         border: 2px solid var(--secondary-color);
         color: var(--secondary-color);
         padding: 15px 40px;
-        font-size: 1.1em;
+        font-size: 1.2em;
         border-radius: 50px;
         cursor: pointer;
+        transition: 0.3s;
     }
 
     .call-to-action:hover {
         background-color: var(--secondary-color);
-        color: white;
+        color: var(--background-dark);
     }
 
     .footer {
@@ -158,5 +200,6 @@
         padding: 20px;
         background-color: var(--primary-color);
         color: var(--text-muted);
+        font-size: 0.9em;
     }
 </style>

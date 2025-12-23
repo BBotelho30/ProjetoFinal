@@ -24,6 +24,7 @@
     <nav class="nav">
         <ul>
             <li><a href="/admin">Início</a></li>
+            <li><a href="/admin/eventos">Eventos</a></li>
             <li class="user-greeting">Bem-vindo, <span>{$user?.nome || ''}</span></li>
             <li><button class="logout-btn" on:click={logout}>Sair</button></li>
         </ul>
@@ -43,7 +44,7 @@
             <div class="plus-sign">+</div>
         </button>
 
-        <button class="admin-card" on:click={() => goto('/admin/novo-evento')}>
+        <button class="admin-card" on:click={() => goto('/admin/adiciona_espetaculo')}>
             <div class="icon">🎭</div>
             <h2>Adicionar Espetáculo</h2>
             <div class="plus-sign">+</div>
