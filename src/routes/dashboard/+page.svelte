@@ -156,8 +156,15 @@
         z-index: 0;
     }
 
-    .hero-glow-1 { top: -10%; left: -10%; }
-    .hero-glow-2 { bottom: -10%; right: -10%; }
+    .hero-glow-1 { 
+        top: -10%; 
+        left: -10%; 
+    }
+
+    .hero-glow-2 { 
+        bottom: -10%; 
+        right: -10%; 
+    }
 
     .hero-content {
         z-index: 10;
