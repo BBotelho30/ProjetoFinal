@@ -16,6 +16,28 @@
         user.set(null);
         goto('/');
     }
+
+    let nomeFicheiro = '';
+
+    function mostrarNome(e) {
+        const ficheiro = e.target.files[0];
+        if (ficheiro) {
+            nomeFicheiro = ficheiro.name; 
+        }
+    }
+
+    let sessoes = [{ data: '', hora: '' }];
+    
+    function adicionarSessao() {
+        sessoes = [...sessoes, { data: '', hora: '' }];
+    }
+
+    function removerSessao(index) {
+        sessoes = sessoes.filter((_, i) => i !== index);
+    }
+
+    $: sessoesJSON = JSON.stringify(sessoes);
+
 </script>
 
 <header class="header">
@@ -44,10 +66,19 @@
         <div class="form-layout">
             <div class="image-column">
                 <div class="image-upload">
-                    <p>CARTAZ DO EVENTO</p>
-                    <span class="plus-icon">+</span>
-                    <input type="file" name="imagem_ficheiro" accept="image/*" required class="file-input" />
+                    {#if nomeFicheiro}
+                        <p style="color: var(--secondary-color); font-size: 0.9em; text-align: center; padding: 10px;">
+                            {nomeFicheiro}
+                        </p>
+                    {:else}
+                        <p>CARTAZ DO EVENTO</p>
+                        <span class="plus-icon">+</span>
+                    {/if} 
+                    <!--aceita qualquer iamgem JPG, PNG, GIF, WEBP -->
+                    <input type="file" name="imagem_ficheiro" accept="image/*" required class="file-input" on:change={mostrarNome} />
+
                 </div>
+
                 <small class="hint">Formatos: JPG, PNG ou WEBP</small>
             </div>
 
@@ -70,6 +101,8 @@
                 <button type="submit" class="call-to-action">Publicar Espetáculo</button>
             </div>
         </div>
+
+        
     </form>
 </main>
 
@@ -202,7 +235,7 @@
         position: absolute;
         width: 100%;
         height: 100%;
-        opacity: 0; /* Esconde o botão feio do sistema, mas mantém funcional */
+        opacity: 0; /* Esconde o botão do sistema, mas mantém funcional */
         cursor: pointer;
     }
 
