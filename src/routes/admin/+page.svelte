@@ -1,35 +1,7 @@
 <script>
     // @ts-nocheck
-    import { user } from '$lib/userStore';
-    import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-
-    let siteName = "QuickSeat";
-
-    // Se não for admin, volta para o login
-    onMount(() => {
-        if (!$user || $user.tipo !== 'admin') {
-            goto('/login');
-        }
-    });
-
-    function logout() {
-        user.set(null);
-        goto('/');
-    }
 </script>
-
-<header class="header">
-    <div class="logo">{siteName}</div>
-    <nav class="nav">
-        <ul>
-            <li><a href="/admin">Início</a></li>
-            <li><a href="/admin/eventos">Eventos</a></li>
-            <li class="user-greeting">Bem-vindo, <span>{$user?.nome || ''}</span></li>
-            <li><button class="logout-btn" on:click={logout}>Sair</button></li>
-        </ul>
-    </nav>
-</header>
 
 <main class="admin-dashboard">
     <div class="welcome-text">
@@ -59,7 +31,6 @@
 </main>
 
 <style>
-    
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
@@ -67,78 +38,6 @@
         --text-light: #e0e0e0;
         --text-muted: #888;
     }
-
-    /* BARRA SUPERIOR  */
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px; 
-        background-color: var(--primary-color);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    .header .logo {
-        font-size: 1.8em; /* Tamanho igual ao seu original */
-        font-weight: bold;
-        color: var(--text-light);
-    }
-
-    .header .nav ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        align-items: center;
-    }
-
-    .header .nav li {
-        margin-left: 30px;
-    }
-
-    .header .nav a {
-        color: var(--text-light);
-        text-decoration: none;
-        font-size: 1.1em;
-        letter-spacing: 1px;
-        transition: color 0.3s ease;
-    }
-
-    .header .nav a:hover {
-        color: var(--secondary-color);
-    }
-
-    /*  do Admin */
-    .user-greeting {
-        color: var(--text-light);
-        font-size: 1.1em;
-    }
-
-    .user-greeting span {
-        color: var(--secondary-color);
-        font-weight: bold;
-    }
-
-    /* Botão Sair com estilo de borda arredondada */
-    .logout-btn {
-        background: none;
-        border: 2px solid var(--secondary-color); 
-        color: var(--secondary-color);
-        padding: 8px 20px;
-        border-radius: 50px;
-        cursor: pointer;
-        font-size: 0.9em;
-        transition: 0.3s;
-    }
-
-    .logout-btn:hover {
-        background: var(--secondary-color);
-        color: #1a1a2e;
-    }
-
 
     /* PAINEL DE CARTÕES  */
     .admin-dashboard {

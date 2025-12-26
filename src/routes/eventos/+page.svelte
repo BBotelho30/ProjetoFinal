@@ -6,33 +6,10 @@
     export let data;
     let { eventos } = data;
 
-    let siteName = "QuickSeat";
-
-    function logout() {
-        user.set(null);
-        goto('/');
-    }
-
     function comprar(eventoNome) {
         alert(`Iniciando a compra para: ${eventoNome}. (Funcionalidade brevemente disponível)`);
     }
 </script>
-
-<header class="header">
-    <div class="logo">{siteName}</div>
-    <nav class="nav">
-        <ul>
-            <li><a href="/">Início</a></li>
-            <li><a href="/eventos">Eventos</a></li>
-            {#if $user}
-                <li class="user-greeting">Olá, <span>{$user.nome}</span></li>
-                <li><button class="logout-btn" on:click={logout}>Sair</button></li>
-            {:else}
-                <li><a href="/login">Login</a></li>
-            {/if}
-        </ul>
-    </nav>
-</header>
 
 <main class="events-page">
     <div class="welcome-text">
@@ -75,41 +52,6 @@
         --text-muted: #888;
         --card-bg: #16213e;
     }
-
-    /* HEADER */
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background-color: var(--primary-color);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    .logo { font-size: 1.8em; font-weight: bold; color: var(--text-light); }
-    .nav ul { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; }
-    .nav li { margin-left: 30px; }
-    .nav a { color: var(--text-light); text-decoration: none; font-size: 1.1em; letter-spacing: 1px; transition: 0.3s; }
-    .nav a:hover { color: var(--secondary-color); }
-
-    .user-greeting { color: var(--text-light); margin-left: 30px; font-size: 1.1em; }
-    .user-greeting span { color: var(--secondary-color); font-weight: bold; }
-
-    .logout-btn {
-        background: none;
-        border: 2px solid var(--secondary-color);
-        color: var(--secondary-color);
-        padding: 8px 20px;
-        border-radius: 50px;
-        cursor: pointer;
-        margin-left: 20px;
-        transition: 0.3s;
-    }
-
-    .logout-btn:hover { background: var(--secondary-color); color: white; }
 
     /* GRID E CARDS */
     .events-page {
@@ -166,6 +108,7 @@
         text-overflow: ellipsis;
         display: -webkit-box;
         -webkit-line-clamp: 1;
+        line-clamp: 1;
         -webkit-box-orient: vertical;
     }
 

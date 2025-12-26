@@ -160,7 +160,8 @@
 
     .auth-footer{ 
         margin-top:14px; 
-        color:var(--text-muted); 
+        color:var(--text-muted);
+        text-align: center;
     }
 
     .auth-footer a{ 

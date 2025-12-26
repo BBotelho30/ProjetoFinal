@@ -1,24 +1,10 @@
 <script>
-    let siteName = "QuickSeat"; 
-    let tagline = "A sua plataforma simples para gerir lugares e eventos."; 
 </script>
-
-<header class="header">
-    <div class="logo">{siteName}</div>
-    <nav class="nav">
-        <ul>
-            <li><a href="/">Início</a></li>
-            <li><a href="/eventos">Eventos</a></li>
-            <li><a href="/login">Login</a></li>
-            <li><a href="/registo">Registo</a></li>
-        </ul>
-    </nav>
-</header>
 
 <main class="hero-section">
     <div class="hero-content">
-        <h1 class="hero-title">Bem-vindo ao {siteName}</h1>
-        <p class="hero-tagline">{tagline}</p>
+        <h1 class="hero-title">Bem-vindo ao QuickSeat</h1>
+        <p class="hero-tagline">A sua plataforma simples para gerir lugares e eventos.</p>
         <button class="call-to-action" on:click={() => window.location.href='/registo'}>
             Começar Agora
         </button>
@@ -26,7 +12,7 @@
 </main>
 
 <footer class="footer">
-    <p>&copy; 2025 {siteName}. Todos os direitos reservados.</p>
+    <p>&copy; 2025 QuickSeat. Todos os direitos reservados.</p>
 </footer>
 
 <style>
@@ -37,66 +23,6 @@
         --text-light: #e0e0e0;
         --text-muted: #888;
         --border-color: #3f3f5f;
-    }
-
-    html{
-        height: 100%;
-    }
-
-    html, body {
-        margin: 0 !important; /* Força margem zero */
-        padding: 0 !important; /* Força padding zero */
-        width: 100%;
-        min-height: 100%;
-    }
-
-    body {
-            font-family: 'Bebas Neue', sans-serif;
-            background-color: var(--background-dark);
-            color: var(--text-light);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background-color: var(--primary-color);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    .header .logo {
-        font-size: 1.8em;
-        font-weight: bold;
-        color: var(--text-light);
-    }
-
-    .header .nav ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-    }
-
-    .header .nav li {
-        margin-left: 30px;
-    }
-
-    .header .nav a {
-        color: var(--text-light);
-        text-decoration: none;
-        font-size: 1.1em;
-        letter-spacing: 1px;
-        transition: color 0.3s ease;
-    }
-
-    .header .nav a:hover {
-        color: var(--secondary-color);
     }
 
     .hero-section {

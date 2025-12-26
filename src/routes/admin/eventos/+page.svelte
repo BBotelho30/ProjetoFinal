@@ -39,24 +39,7 @@
     onMount(() => {
         if (!$user || $user.tipo !== 'admin') goto('/login');
     });
-
-    function logout() {
-        user.set(null);
-        goto('/');
-    }
 </script>
-
-<header class="header">
-    <div class="logo">QuickSeat</div>
-    <nav class="nav">
-        <ul>
-            <li><a href="/admin">Início</a></li>
-            <li><a href="/admin/eventos">Eventos</a></li>
-            <li class="user-greeting">Bem-vindo, <span>{$user?.nome || ''}</span></li>
-            <li><button class="logout-btn" on:click={logout}>Sair</button></li>
-        </ul>
-    </nav>
-</header>
 
 <main class="admin-dashboard">
     <div class="welcome-text">
@@ -126,18 +109,18 @@
 
                 <div class="fields-column">
                     <div class="input-group">
-                        <label>Nome do Evento</label>
-                        <input type="text" name="nome" bind:value={eventoParaEditar.nome_evento} required />
+                        <label for="edit-nome">Nome do Evento</label>
+                        <input type="text" id="edit-nome" name="nome" bind:value={eventoParaEditar.nome_evento} required />
                     </div>
 
                     <div class="input-group">
-                        <label>Descrição</label>
-                        <textarea name="descricao" bind:value={eventoParaEditar.descricao} rows="4"></textarea>
+                        <label for="edit-descricao">Descrição</label>
+                        <textarea id="edit-descricao" name="descricao" bind:value={eventoParaEditar.descricao} rows="4"></textarea>
                     </div>
 
                     <div class="input-group">
-                        <label>Tipo</label>
-                        <input type="text" name="tipo" bind:value={eventoParaEditar.tipo_espectaculo} required />
+                        <label for="edit-tipo">Tipo</label>
+                        <input type="text" id="edit-tipo" name="tipo" bind:value={eventoParaEditar.tipo_espectaculo} required />
                     </div>
 
                     <button type="submit" class="btn-save">Guardar Alterações</button>
@@ -149,8 +132,6 @@
 {/if}
 
 <style>
-    body { font-family: 'Bebas Neue', sans-serif; }
-   
     :root { 
         --primary-color: #0f3460; 
         --secondary-color: #ff0000; 
@@ -158,74 +139,6 @@
         --text-light: #e0e0e0; 
         --text-muted: #888; 
         --card-bg: #16213e; 
-    }
-    
-    .header { 
-        display: flex; 
-        justify-content: space-between; 
-        align-items: center; 
-        padding: 20px 40px; 
-        background-color: var(--primary-color); 
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); 
-        position: sticky; 
-        top: 0; 
-        z-index: 1000; 
-    }
-    
-    .logo { 
-        font-size: 1.8em; 
-        font-weight: bold; 
-        color: var(--text-light); 
-    }
-    
-    .nav ul { 
-        list-style: none; 
-        margin: 0; 
-        padding: 0; 
-        display: flex; 
-        align-items: center; 
-    }
-    
-    .nav li { 
-        margin-left: 30px; 
-    }
-    
-    .nav a { 
-        color: var(--text-light); 
-        text-decoration: none; 
-        font-size: 1.1em; 
-        letter-spacing: 1px;
-        transition: color 0.3s ease;
-    }
-    
-    .nav a:hover {
-        color: var(--secondary-color);
-    }
-    
-    .user-greeting { 
-        color: var(--text-light); 
-        font-size: 1.1em; 
-    }
-    
-    .user-greeting span { 
-        color: var(--secondary-color); 
-        font-weight: bold; 
-    }
-    
-    .logout-btn { 
-        background: none; 
-        border: 2px solid var(--secondary-color); 
-        color: var(--secondary-color); 
-        padding: 8px 20px; 
-        border-radius: 50px; 
-        cursor: pointer;
-        font-size: 0.9em;
-        transition: 0.3s;
-    }
-    
-    .logout-btn:hover {
-        background: var(--secondary-color);
-        color: #1a1a2e;
     }
     
     .admin-dashboard { 
@@ -254,11 +167,6 @@
         font-weight: bold;
         transition: 0.3s;
         margin-top: 10px;
-    }
-    
-    .btn-add-event .plus-icon {
-        font-size: 1.5em;
-        line-height: 1;
     }
     
     .btn-add-event:hover {
@@ -324,6 +232,7 @@
         text-overflow: ellipsis;
         display: -webkit-box;
         -webkit-line-clamp: 1;
+        line-clamp: 1;
         -webkit-box-orient: vertical;
     }
     
@@ -517,28 +426,6 @@
         background: #1f1f3d; 
     }
     
-    .form-group label { 
-        display: block; 
-        margin-bottom: 5px; 
-        color: var(--text-light); 
-        font-size: 0.9em; 
-    }
-    
-    .form-group input, .form-group textarea { 
-        width: 100%; 
-        padding: 10px; 
-        border-radius: 8px; 
-        border: 1px solid #333; 
-        background: var(--background-dark); 
-        color: white; 
-    }
-    
-    .modal-actions { 
-        display: flex; 
-        gap: 10px; 
-        margin-top: 20px; 
-    }
-    
     .btn-save { 
         width: 100%;
         background: var(--secondary-color); 
@@ -555,21 +442,6 @@
     
     .btn-save:hover {
         transform: translateY(-2px);
-    }
-    
-    .btn-cancel { 
-        flex: 1; 
-        background: #444; 
-        color: white; 
-        border: none; 
-        padding: 12px; 
-        border-radius: 10px; 
-        cursor: pointer;
-        transition: 0.3s;
-    }
-    
-    .btn-cancel:hover {
-        background: #555;
     }
     
     /* PRÉ-VISUALIZAÇÃO DA IMAGEM NO MODAL */

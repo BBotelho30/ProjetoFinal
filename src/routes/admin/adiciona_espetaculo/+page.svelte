@@ -4,18 +4,11 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
 
-    let siteName = "QuickSeat";
-
     onMount(() => {
         if (!$user || $user.tipo !== 'admin') {
             goto('/login');
         }
     });
-
-    function logout() {
-        user.set(null);
-        goto('/');
-    }
 
     let nomeFicheiro = '';
 
@@ -39,22 +32,6 @@
     $: sessoesJSON = JSON.stringify(sessoes);
 
 </script>
-
-<header class="header">
-    <div class="logo">{siteName}</div>
-    <nav class="nav">
-        <ul>
-            <li><a href="/admin">Início</a></li>
-            <li><a href="/admin/eventos">Eventos</a></li>
-            {#if $user}
-                <li class="user-info">
-                    <span>Bem-Vindo, <strong> {$user.nome}</strong></span>
-                    <button class="logout-btn" on:click={logout}>Sair</button>
-                </li>
-            {/if}
-        </ul>
-    </nav>
-</header>
 
 <main class="hero-section">
     <div class="hero-glow-1"></div>
@@ -108,7 +85,7 @@
 </main>
 
 <footer class="footer">
-    <p>&copy; 2025 {siteName}. Todos os direitos reservados.</p>
+    <p>&copy; 2025 QuickSeat. Todos os direitos reservados.</p>
 </footer>
 
 <style>
@@ -120,60 +97,6 @@
         --text-muted: #888;
         --border-color: #3f3f5f;
     }
-
-    /* HEADER */
-    .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background-color: var(--primary-color);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-    }
-
-    .header .logo { 
-        font-size: 1.8em; 
-        font-weight: bold; 
-        color: var(--text-light); 
-    }
-
-    .header .nav ul { 
-        list-style: none; 
-        display: flex; 
-        align-items: center; 
-        gap: 30px; 
-        margin: 0; 
-        padding: 0; 
-    }
-
-    .header .nav a { 
-        color: var(--text-light); 
-        text-decoration: none; 
-        font-size: 1.1em; 
-        letter-spacing: 1px; 
-        transition: 0.3s; 
-    }
-    
-    .header .nav a:hover { 
-        color: var(--secondary-color); 
-    }
-
-    .user-info { display: flex; align-items: center; gap: 15px; border-left: 1px solid var(--border-color); padding-left: 20px; }
-    .user-info strong { color: var(--secondary-color); }
-
-    .logout-btn {
-        background: none;
-        border: 1px solid var(--secondary-color);
-        color: var(--secondary-color);
-        padding: 6px 15px;
-        border-radius: 20px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-    .logout-btn:hover { background: var(--secondary-color); color: #1a1a2e; }
 
     /* LAYOUT PRINCIPAL */
     .hero-section {

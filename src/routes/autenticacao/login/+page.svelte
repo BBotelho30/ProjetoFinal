@@ -120,4 +120,15 @@
         background: #ff0000;
         color: #1a1a2e;
     }
+
+    .auth-footer {
+        margin-top: 20px;
+        text-align: center;
+        color: #888;
+    }
+
+    .auth-footer a {
+        color: #e0e0e0;
+        text-decoration: underline;
+    }
 </style>
