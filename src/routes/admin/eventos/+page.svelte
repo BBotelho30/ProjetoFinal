@@ -37,7 +37,7 @@
     }
 
     onMount(() => {
-        if (!$user || $user.tipo !== 'admin') goto('/login');
+        if (!$user || $user.tipo !== 'admin') goto('/autenticacao/login');
     });
 </script>
 

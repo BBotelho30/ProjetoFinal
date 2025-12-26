@@ -16,8 +16,8 @@
 	let hideHeader = $derived(
 		$page.url.pathname.startsWith('/admin') || 
 		$page.url.pathname.startsWith('/dashboard') ||
-		$page.url.pathname === '/login' ||
-		$page.url.pathname === '/registo' ||
+		$page.url.pathname === '/autenticacao/login' ||
+		$page.url.pathname === '/autenticacao/registo' ||
 		$page.url.pathname === '/(auth)/login' ||
 		$page.url.pathname === '/(auth)/registo'
 	);
@@ -39,8 +39,8 @@
 				<li class="user-greeting">Olá, <span>{$user.nome}</span></li>
 			<li><button class="logout-btn" onclick={logout}>Sair</button></li>
 			{:else}
-				<li><a href="/login">Login</a></li>
-				<li><a href="/registo">Registo</a></li>
+			<li><a href="/autenticacao/login">Login</a></li>
+			<li><a href="/autenticacao/registo">Registo</a></li>
 			{/if}
 		</ul>
 	</nav>

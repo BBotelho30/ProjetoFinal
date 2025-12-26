@@ -5,7 +5,7 @@
     <div class="hero-content">
         <h1 class="hero-title">Bem-vindo ao QuickSeat</h1>
         <p class="hero-tagline">A sua plataforma simples para gerir lugares e eventos.</p>
-        <button class="call-to-action" on:click={() => window.location.href='/registo'}>
+        <button class="call-to-action" on:click={() => window.location.href='/autenticacao/registo'}>
             Começar Agora
         </button>
     </div>

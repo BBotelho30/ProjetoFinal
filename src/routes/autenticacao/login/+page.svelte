@@ -64,7 +64,7 @@
             <button type="submit" class="call-to-action">Entrar</button>
         </form>
 
-        <p class="auth-footer">Ainda não tens conta? <a href="/registo">Registar</a></p>
+        <p class="auth-footer">Ainda não tens conta? <a href="/autenticacao/registo">Registar</a></p>
     </div>
 </main>
 

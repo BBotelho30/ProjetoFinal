@@ -27,7 +27,7 @@
 
             if (result.success) {
                 alert('Registo concluído com sucesso!');
-                goto('/login'); // Redireciona para o login
+                goto('/autenticacao/login'); // Redireciona para o login
             } else {
                 alert(result.message);
             }
@@ -73,7 +73,7 @@
             <button type="submit" class="call-to-action">Registar</button>
         </form>
 
-        <p class="auth-footer">Já tens conta? <a href="/login">Entrar</a></p>
+        <p class="auth-footer">Já tens conta? <a href="/autenticacao/login">Entrar</a></p>
     </div>
 </main>
 

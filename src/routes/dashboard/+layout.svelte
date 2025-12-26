@@ -6,7 +6,7 @@
 
     onMount(() => {
         if (!$user) {
-            goto('/login');
+            goto('/autenticacao/login');
         }
     });
 </script>
