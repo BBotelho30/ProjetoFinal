@@ -46,7 +46,8 @@
         <p class="hero-tagline">Entra para gerires as tuas reservas.</p>
 
         {#if errorMessage}
-            <p style="color: #e94560; margin-bottom: 1rem; font-weight: bold;">{errorMessage}</p>
+            <p style="color: #ff0000; margin-bottom: 1rem; font-weight: bold;">{errorMessage}</p>
+            
         {/if}
 
         <form on:submit|preventDefault={handleLogin} class="auth-form">
@@ -82,7 +83,7 @@
         border-radius: 12px;
         width: 100%;
         max-width: 400px;
-        color: #e0e0e0;
+        
     }
     .hero-title { 
         margin-bottom: 10px; 
@@ -107,15 +108,16 @@
         width: 100%;
         margin-top: 25px;
         padding: 12px;
+        font-size: 1.2em;
         border-radius: 50px;
-        border: 2px solid #e94560;
+        border: 2px solid #ff0000;
         background: none;
-        color: #e94560;
+        color: #ff0000;
         cursor: pointer;
     }
 
     .call-to-action:hover {
-        background: #e94560;
-        color: white;
+        background: #ff0000;
+        color: #1a1a2e;
     }
 </style>

@@ -81,7 +81,7 @@
     :global(:root) {
         --background-dark: #1a1a2e;
         --primary-color: #0f3460;
-        --secondary-color: #e94560;
+        --secondary-color: #ff0000;
         --text-light: #e0e0e0;
         --text-muted: #888;
     }
@@ -149,7 +149,7 @@
         border:2px solid var(--secondary-color);
         background: none;
         color: var(--secondary-color);
-        font-size:1em;
+        font-size:1.2em;
         cursor:pointer;
     }
 

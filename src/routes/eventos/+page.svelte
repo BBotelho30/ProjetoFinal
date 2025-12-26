@@ -6,7 +6,7 @@
     export let data;
     let { eventos } = data;
 
-    let siteName = "Gestão de Reservas de Lugares";
+    let siteName = "QuickSeat";
 
     function logout() {
         user.set(null);
@@ -65,6 +65,8 @@
 </main>
 
 <style>
+  
+    
     :root {
         --primary-color: #0f3460;
         --secondary-color: #ff0000;
@@ -85,13 +87,12 @@
         position: sticky;
         top: 0;
         z-index: 1000;
-        font-family: 'Roboto', sans-serif;
     }
 
     .logo { font-size: 1.8em; font-weight: bold; color: var(--text-light); }
     .nav ul { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; }
     .nav li { margin-left: 30px; }
-    .nav a { color: var(--text-light); text-decoration: none; font-size: 1.1em; transition: 0.3s; }
+    .nav a { color: var(--text-light); text-decoration: none; font-size: 1.1em; letter-spacing: 1px; transition: 0.3s; }
     .nav a:hover { color: var(--secondary-color); }
 
     .user-greeting { color: var(--text-light); margin-left: 30px; font-size: 1.1em; }
@@ -115,7 +116,6 @@
         padding: 60px 20px;
         min-height: 100vh;
         background: linear-gradient(45deg, var(--background-dark), var(--primary-color));
-        font-family: 'Roboto', sans-serif;
     }
 
     .welcome-text { text-align: center; margin-bottom: 50px; color: white; }
@@ -123,7 +123,7 @@
 
     .cards-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 40px;
         max-width: 1200px;
         margin: 0 auto;
@@ -142,7 +142,7 @@
     .event-card:hover { transform: translateY(-10px); }
 
     .card-image {
-        height: 250px;
+        height: 390px;
         background-size: cover;
         background-position: center;
         position: relative;
@@ -150,22 +150,33 @@
 
     .type-tag {
         position: absolute; top: 15px; right: 15px;
-        background: var(--secondary-color); color: white;
-        padding: 6px 15px; border-radius: 50px; font-size: 0.8em; font-weight: bold;
+        background: var(--secondary-color); color: #1a1a2e;
+        padding: 6px 15px; border-radius: 50px; font-size: 1em; font-weight: bold;
     }
 
-    .card-info { padding: 25px; color: white; flex-grow: 1; display: flex; flex-direction: column; }
-    .card-info h3 { margin: 0 0 15px 0; font-size: 1.5em; }
-    .card-info p { color: var(--text-muted); font-size: 1em; line-height: 1.5; margin-bottom: 25px; flex-grow: 1; }
+    .card-info { padding: 15px; color: white; flex-grow: 1; display: flex; flex-direction: column; }
+    .card-info h3 { margin: 0 0 8px 0; font-size: 1.5em; }
+    .card-info p { 
+        color: var(--text-muted); 
+        font-size: 1em; 
+        line-height: 1.5; 
+        margin-bottom: 12px; 
+        flex-grow: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
 
     /* BOTÃO COMPRAR BILHETE */
     .buy-btn {
         background: var(--secondary-color);
-        color: white;
+        color: #1a1a2e;
         border: none;
         padding: 15px;
         border-radius: 12px;
-        font-size: 1.1em;
+        font-size: 1.2em;
         font-weight: bold;
         cursor: pointer;
         transition: 0.3s;
@@ -174,7 +185,7 @@
 
     .buy-btn:hover {
         filter: brightness(1.2);
-        box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+        box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
     }
 
     .empty-state { color: white; text-align: center; grid-column: 1 / -1; font-size: 1.2em; }

@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
 
-    let siteName = "Gestão de Reservas de Lugares";
+    let siteName = "QuickSeat";
 
     onMount(() => {
         if (!$user || $user.tipo !== 'admin') {
@@ -48,7 +48,7 @@
             <li><a href="/admin/eventos">Eventos</a></li>
             {#if $user}
                 <li class="user-info">
-                    <span>Olá, <strong> {$user.nome}</strong></span>
+                    <span>Bem-Vindo, <strong> {$user.nome}</strong></span>
                     <button class="logout-btn" on:click={logout}>Sair</button>
                 </li>
             {/if}
@@ -61,6 +61,7 @@
     <div class="hero-glow-2"></div>
 
     <form method="POST" class="form-container" enctype="multipart/form-data">
+        <button type="button" class="close-btn" on:click={() => window.history.back()}>&times;</button>
         <h1 class="hero-title">Novo Espetáculo</h1>
 
         <div class="form-layout">
@@ -114,7 +115,7 @@
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
-        --secondary-color: #e94560; 
+        --secondary-color: #ff0000; 
         --text-light: #e0e0e0;
         --text-muted: #888;
         --border-color: #3f3f5f;
@@ -134,7 +135,7 @@
     }
 
     .header .logo { 
-        font-size: 1.6em; 
+        font-size: 1.8em; 
         font-weight: bold; 
         color: var(--text-light); 
     }
@@ -148,8 +149,17 @@
         padding: 0; 
     }
 
-    .header .nav a { color: var(--text-light); text-decoration: none; transition: 0.3s; }
-    .header .nav a:hover { color: var(--secondary-color); }
+    .header .nav a { 
+        color: var(--text-light); 
+        text-decoration: none; 
+        font-size: 1.1em; 
+        letter-spacing: 1px; 
+        transition: 0.3s; 
+    }
+    
+    .header .nav a:hover { 
+        color: var(--secondary-color); 
+    }
 
     .user-info { display: flex; align-items: center; gap: 15px; border-left: 1px solid var(--border-color); padding-left: 20px; }
     .user-info strong { color: var(--secondary-color); }
@@ -163,7 +173,7 @@
         cursor: pointer;
         transition: 0.3s;
     }
-    .logout-btn:hover { background: var(--secondary-color); color: white; }
+    .logout-btn:hover { background: var(--secondary-color); color: #1a1a2e; }
 
     /* LAYOUT PRINCIPAL */
     .hero-section {
@@ -186,6 +196,32 @@
         max-width: 950px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         border: 1px solid var(--border-color);
+        position: relative;
+    }
+    
+    .close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: var(--text-light);
+        font-size: 3.5em;
+        cursor: pointer;
+        transition: 0.3s;
+        line-height: 1;
+        padding: 0;
+        width: 50px;
+        height: 50px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .close-btn:hover {
+        color: var(--secondary-color);
+        transform: rotate(90deg);
     }
 
     .hero-title { font-size: 2.5em; margin-bottom: 40px; text-align: center; color: white; }
@@ -262,9 +298,9 @@
     .call-to-action {
         background: var(--secondary-color);
         border: none;
-        color: white;
+        color: #1a1a2e;
         padding: 18px;
-        font-size: 1.1em;
+        font-size: 1.4em;
         font-weight: bold;
         border-radius: 8px;
         cursor: pointer;
@@ -272,7 +308,7 @@
         margin-top: 10px;
     }
 
-    .call-to-action:hover { filter: brightness(1.2); transform: translateY(-2px); }
+    .call-to-action:hover { transform: translateY(-2px); }
 
     /* GLOW EFFECTS */
     .hero-glow-1, .hero-glow-2 {

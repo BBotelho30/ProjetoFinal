@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
 
-    let siteName = "Gestão de Reservas de Lugares"; 
+    let siteName = "QuickSeat"; 
 
     // se não houver utilizador logado no store, volta para o login
     onMount(() => {
@@ -57,10 +57,11 @@
 </footer>
 
 <style>
+    
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
-        --secondary-color: #e94560; 
+        --secondary-color: #ff0000; 
         --text-light: #e0e0e0;
         --text-muted: #888;
     }
@@ -100,6 +101,7 @@
         color: var(--text-light);
         text-decoration: none;
         font-size: 1.1em;
+        letter-spacing: 1px;
         transition: color 0.3s ease;
     }
 
@@ -128,7 +130,19 @@
 
     .logout-btn:hover {
         background: var(--secondary-color);
-        color: white;
+        color: #1a1a2e;
+    }
+
+    .user-greeting {
+        color: var(--text-light);
+        font-size: 1.1em;
+    }
+
+    .user-greeting span {
+        color: #ff0000;
+        font-weight: bold;
+        
+    
     }
 
     /* HERO SECTION IGUAL À LANDING PAGE */

@@ -1,5 +1,5 @@
 <script>
-    let siteName = "Gestão de Reservas de Lugares"; 
+    let siteName = "QuickSeat"; 
     let tagline = "A sua plataforma simples para gerir lugares e eventos."; 
 </script>
 
@@ -9,7 +9,6 @@
         <ul>
             <li><a href="/">Início</a></li>
             <li><a href="/eventos">Eventos</a></li>
-            <li><a href="/minhas-reservas">As Minhas Reservas</a></li>
             <li><a href="/login">Login</a></li>
             <li><a href="/registo">Registo</a></li>
         </ul>
@@ -34,7 +33,7 @@
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
-        --secondary-color: #e94560; 
+        --secondary-color: #ff0000; 
         --text-light: #e0e0e0;
         --text-muted: #888;
         --border-color: #3f3f5f;
@@ -52,7 +51,7 @@
     }
 
     body {
-            font-family: 'Roboto', sans-serif;
+            font-family: 'Bebas Neue', sans-serif;
             background-color: var(--background-dark);
             color: var(--text-light);
             line-height: 1.6;
@@ -92,6 +91,7 @@
         color: var(--text-light);
         text-decoration: none;
         font-size: 1.1em;
+        letter-spacing: 1px;
         transition: color 0.3s ease;
     }
 
@@ -101,7 +101,7 @@
 
     .hero-section {
         width: 100%;
-        min-height: 100vh;
+        min-height: 90vh;
         
         /* cor de fundo na secção principal */
         background: linear-gradient(45deg, var(--background-dark), var(--primary-color));
@@ -163,10 +163,11 @@
 
     .call-to-action {
         background: none;
-        border: 2px solid var(--secondary-color);
-        color: var(--secondary-color);
-        padding: 15px 40px;
-        font-size: 1.2em;
+        border: 2px solid #ff0000;
+        color: #ff0000;
+        padding: 18px 50px;
+        font-size: 1.4em;
+        font-family: inherit;
         border-radius: 50px;
         cursor: pointer;
         transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
@@ -174,9 +175,9 @@
     }
 
     .call-to-action:hover {
-        background-color: var(--secondary-color);
-        color: var(--background-dark);
-        border-color: var(--secondary-color);
+        background-color: #ff0000;
+        color: #1a1a2e;
+        border-color: #ff0000;
     }
 
     .footer {

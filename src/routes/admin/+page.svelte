@@ -4,7 +4,7 @@
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
 
-    let siteName = "Gestão de Reservas de Lugares";
+    let siteName = "QuickSeat";
 
     // Se não for admin, volta para o login
     onMount(() => {
@@ -59,10 +59,11 @@
 </main>
 
 <style>
+    
     :root {
         --background-dark: #1a1a2e; 
         --primary-color: #0f3460;   
-        --secondary-color: #e94560; 
+        --secondary-color: #ff0000; 
         --text-light: #e0e0e0;
         --text-muted: #888;
     }
@@ -102,6 +103,7 @@
         color: var(--text-light);
         text-decoration: none;
         font-size: 1.1em;
+        letter-spacing: 1px;
         transition: color 0.3s ease;
     }
 
@@ -126,17 +128,17 @@
         border: 2px solid var(--secondary-color); 
         color: var(--secondary-color);
         padding: 8px 20px;
-        font-size: 1em;
         border-radius: 50px;
         cursor: pointer;
-        transition: background-color 0.3s ease, color 0.3s ease;
-        outline: none;
+        font-size: 0.9em;
+        transition: 0.3s;
     }
 
     .logout-btn:hover {
-        background-color: var(--secondary-color);
-        color: var(--background-dark);
+        background: var(--secondary-color);
+        color: #1a1a2e;
     }
+
 
     /* PAINEL DE CARTÕES  */
     .admin-dashboard {
@@ -186,7 +188,7 @@
 
     .admin-card:hover {
         transform: translateY(-10px);
-        box-shadow: 0 15px 30px rgba(233, 69, 96, 0.4);
+        box-shadow: 0 15px 30px rgba(255, 0, 0, 0.4);
     }
 
     .admin-card h2 { 
