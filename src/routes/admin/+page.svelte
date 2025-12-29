@@ -10,7 +10,7 @@
     </div>
 
     <div class="cards-container">
-        <button class="admin-card" on:click={() => alert('Abrir Gestão de Salas')}>
+        <button class="admin-card" on:click={() => goto('/admin/salas')}>
             <div class="icon">🏢</div>
             <h2>Adicionar Sala de Espetáculo</h2>
             <div class="plus-sign">+</div>
