@@ -27,8 +27,8 @@
                     <h3>{evento.nome_evento}</h3>
                     <p>{evento.descricao || 'Sem descrição disponível.'}</p>
                     <div class="card-actions">
-                        <button class="buy-btn" on:click={() => comprar(evento.nome_evento)}>
-                            Comprar Bilhete
+                        <button class="buy-btn" on:click={() => goto(`/eventos/detalhes_pagina/${evento.id_eventos}`)}>
+                             Comprar Bilhete
                         </button>
                     </div>
                 </div>
