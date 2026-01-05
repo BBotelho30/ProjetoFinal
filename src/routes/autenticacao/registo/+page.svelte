@@ -27,7 +27,7 @@
 
             if (result.success) {
                 alert('Registo concluído com sucesso!');
-                goto('/autenticacao/login'); // Redireciona para o login
+                goto('/autenticacao/login'); 
             } else {
                 alert(result.message);
             }
@@ -42,7 +42,7 @@
 <main class="auth-page">
     <div class="auth-card">
         <h1 class="hero-title">Registo</h1>
-        <p class="hero-tagline">Cria uma conta para começares a reservar lugares.</p>
+        <p class="hero-tagline">Cria uma conta para reservares lugar no teu espetaculo perferido.</p>
 
         <form on:submit|preventDefault={handleRegister} class="auth-form">
             <label>

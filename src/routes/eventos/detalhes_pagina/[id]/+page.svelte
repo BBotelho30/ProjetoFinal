@@ -1,5 +1,6 @@
 <script>
     // @ts-nocheck
+    import { goto } from '$app/navigation';
     export let data;
     const { evento, sessoes } = data;
 
@@ -17,9 +18,8 @@
     }
 
     function irParaCompra(sessao) {
-        // Aqui irás redirecionar para o mapa de lugares da sala
-        alert(`Navegando para o mapa da sala: ${sessao.nome_sala}`);
-    }
+        // Redireciona para o mapa de lugares da sala
+        goto(`/salas_compra/${sessao.id_sala}?evento=${sessao.id_eventos}`);    }
 </script>
 
 <main class="page-container">
@@ -89,12 +89,38 @@
         background: white;
     }
 
-    .event-header { display: flex; gap: 40px; margin-bottom: 60px; }
-    .poster-box img { width: 300px; border-radius: 4px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .event-header { 
+        display: flex; 
+        gap: 40px; 
+        margin-bottom: 60px; 
+    }
+
+    .poster-box img { 
+        width: 300px; 
+        border-radius: 4px; 
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+    }
     
-    .category-tag { background: #f0f0f0; padding: 4px 12px; font-size: 0.75em; font-weight: bold; }
-    .main-details h1 { font-size: 2.8em; margin: 15px 0; font-weight: 800; line-height: 1.1; color: #222; }
-    .meta-info p { margin: 8px 0; color: #555; font-size: 1.1em; }
+    .category-tag { 
+        background: #f0f0f0; 
+        padding: 4px 12px; 
+        font-size: 0.75em; 
+        font-weight: bold; 
+    }
+
+    .main-details h1 { 
+        font-size: 2.8em; 
+        margin: 15px 0; 
+        font-weight: 800; 
+        line-height: 1.1; 
+        color: #222; 
+    }
+
+    .meta-info p { 
+        margin: 8px 0; 
+        color: #555; 
+        font-size: 1.1em; 
+    }
 
     .section-title {
         font-size: 1.8em;
@@ -119,13 +145,45 @@
         border: 1px solid #ddd;
         min-width: 80px;
     }
-    .month-label { background: #cc0000; color: white; width: 100%; text-align: center; font-size: 0.8em; font-weight: bold; padding: 2px 0; }
-    .day-number { font-size: 1.8em; font-weight: bold; margin: 5px 0; }
-    .week-day { font-size: 0.7em; text-transform: uppercase; color: #777; margin-bottom: 5px; }
-    .hour-label { border-top: 1px solid #eee; width: 100%; text-align: center; padding: 5px 0; font-weight: bold; }
+    .month-label { 
+        background: #cc0000; 
+        color: white; 
+        width: 100%; 
+        text-align: center; 
+        font-size: 0.8em; 
+        font-weight: bold; 
+        padding: 2px 0; 
+    }
 
-    .venue-info { flex-grow: 1; }
-    .venue-info h3 { font-size: 1.2em; margin: 0; }
+    .day-number { 
+        font-size: 1.8em; 
+        font-weight: bold; 
+        margin: 5px 0; 
+    }
+
+    .week-day { 
+        font-size: 0.7em; 
+        text-transform: uppercase; 
+        color: #777; 
+        margin-bottom: 5px; 
+    }
+
+    .hour-label { 
+        border-top: 1px solid #eee; 
+        width: 100%; 
+        text-align: center; 
+        padding: 5px 0; 
+        font-weight: bold; 
+    }
+
+    .venue-info { 
+        flex-grow: 1; 
+    }
+
+    .venue-info h3 { 
+        font-size: 1.2em; 
+        margin: 0; 
+    }
 
     .buy-now-btn {
         background: #000;
@@ -136,14 +194,38 @@
         border-radius: 2px;
         cursor: pointer;
     }
-    .price-range { display: block; margin-top: 5px; font-size: 0.8em; color: #999; }
+    .price-range { 
+        display: block; 
+        margin-top: 5px; 
+        font-size: 0.8em; 
+        color: #999; 
+    }
 
-    .description-area .content { line-height: 1.7; font-size: 1.1em; white-space: pre-line; }
-    .empty-msg { color: #888; font-style: italic; }
+    .description-area .content { 
+        line-height: 1.7; 
+        font-size: 1.1em; 
+        white-space: pre-line; 
+    }
+
+    .empty-msg { 
+        color: #888; 
+        font-style: italic; 
+    }
 
     @media (max-width: 768px) {
-        .event-header { flex-direction: column; text-align: center; }
-        .poster-box img { width: 100%; max-width: 300px; }
-        .session-item { flex-direction: column; text-align: center; }
+        .event-header { 
+            flex-direction: column; 
+            text-align: center; 
+        }
+
+        .poster-box img { 
+            width: 100%; 
+            max-width: 300px; 
+        }
+
+        .session-item { 
+            flex-direction: column; 
+            text-align: center; 
+        }
     }
 </style>

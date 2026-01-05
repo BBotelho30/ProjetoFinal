@@ -7,7 +7,7 @@ export async function POST({ request }) {
     try {
         const { nome, apelido, email, password } = await request.json();
 
-        // Verificar se o email já existe para evitar duplicados
+        // Verificar se o email já existe para evitar email duplicados
         const existing = await query('SELECT id_utilizador FROM Utilizadores WHERE email = ?', [email]);
         
         if (existing && existing.length > 0) {

@@ -31,7 +31,6 @@
         --text-muted: #888;
     }
 
-    /* HERO SECTION IGUAL À LANDING PAGE */
     .hero-section {
         flex: 1;
         width: 100%;
@@ -64,7 +63,6 @@
         margin-bottom: 40px; 
     }
 
-    /* BOTÃO CALL TO ACTION IGUAL */
     .call-to-action {
         background: none;
         border: 2px solid var(--secondary-color);

@@ -71,6 +71,7 @@
                     <p>{evento.descricao || 'Sem descrição.'}</p>
                     <div class="card-actions">
                         <button class="action-btn edit" on:click={() => abrirEdicao(evento)}>Editar</button>
+                        
                         <form method="POST" action="?/eliminar" use:enhance>
                             <input type="hidden" name="id" value={evento.id_eventos} />
                             <button type="submit" class="action-btn delete" on:click={(e) => {

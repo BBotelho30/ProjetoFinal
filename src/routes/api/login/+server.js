@@ -7,8 +7,8 @@ export async function POST({ request }) {
     try {
         const { email, password } = await request.json();
 
-        // Usamos SELECT * para garantir que trazemos todas as colunas (incluindo o 'tipo')
-        // Certifica-te que a tabela se chama 'Utilizadores' no MySQL
+        // Usa-se o  SELECT * para garantir que vem todas as colunas (incluindo o 'tipo')
+        // Certifica que a tabela se chama 'Utilizadores' no MySQL
         const sql = `SELECT * FROM Utilizadores WHERE email = ? AND password = ?`;
         
         const users = await query(sql, [email, password]);
@@ -16,7 +16,7 @@ export async function POST({ request }) {
         if (users && users.length > 0) {
             const user = users[0];
             
-            // Segurança: não enviamos a password de volta para o navegador
+            // Remove a password antes de enviar a resposta
             delete user.password;
 
             return json({ 
@@ -32,8 +32,7 @@ export async function POST({ request }) {
 
     } catch (error) {
         // Este console.log vai aparecer no terminal do teu VS Code. 
-        // Vê lá o que diz, pois ele indica o nome exato do erro.
-        console.error('ERRO DETALHADO NO LOGIN:', error);
+        console.error('ERRO NO LOGIN:', error);
         
         return json({ 
             success: false, 

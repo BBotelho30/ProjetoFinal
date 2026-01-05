@@ -7,7 +7,7 @@ export async function load({ params }) {
     const id = params.id; 
 
     try {
-        // 1. Procurar os dados do evento principal
+        //Procura os dados do evento principal
         const eventoReq = await query('SELECT * FROM Eventos WHERE id_eventos = ?', [id]);
         const evento = eventoReq[0];
 
@@ -15,7 +15,7 @@ export async function load({ params }) {
             throw error(404, 'Evento não encontrado');
         }
 
-        // 2. Procurar as sessões com JOIN para obter o nome da sala
+        // Procura as sessões com JOIN para obter o nome da sala
         const sessoes = await query(`
             SELECT es.*, s.nome_sala 
             FROM Eventos_Sala es

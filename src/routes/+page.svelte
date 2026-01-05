@@ -69,7 +69,7 @@
 
 
     .hero-content {
-        z-index: 10; /*conteúdo está acima dos efeitos visuais */
+        z-index: 10; 
         max-width: 800px;
         padding: 20px;
     }

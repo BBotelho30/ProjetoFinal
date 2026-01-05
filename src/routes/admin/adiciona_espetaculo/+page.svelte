@@ -67,7 +67,7 @@
 
                 <div class="input-group">
                     <label for="tipo">Tipo</label>
-                    <input type="text" id="tipo" name="tipo" placeholder="Cinema, Teatro..." />
+                    <input type="text" id="tipo" name="tipo" placeholder="Cinema, Teatro" />
                 </div>
 
                 <div class="sessions-section">
@@ -106,51 +106,160 @@
 
 <style>
     :root {
-        --bg: #1a1a2e; --primary: #0f3460; --accent: #ff0000; --text: #e0e0e0;
+        --bg: #1a1a2e; 
+        --primary: #0f3460;
+        --accent: #ff0000; 
+        --text: #e0e0e0;
     }
 
     .hero-section {
-        min-height: 100vh; background: radial-gradient(circle at top, var(--primary), var(--bg));
-        display: flex; justify-content: center; align-items: center; padding: 20px;
+        min-height: 100vh; 
+        background: radial-gradient(circle at top, var(--primary), var(--bg));
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        padding: 20px;
     }
 
     .form-container { 
-        background: rgba(22, 22, 45, 0.95); padding: 40px; border-radius: 15px;
-        width: 100%; max-width: 1000px; border: 1px solid #3f3f5f; position: relative;
+        background: rgba(22, 22, 45, 0.95); 
+        padding: 40px; 
+        border-radius: 15px;
+        width: 100%; 
+        max-width: 1000px; 
+        border: 1px solid #3f3f5f; 
+        position: relative;
     }
 
-    .close-btn { position: absolute; top: 10px; right: 20px; background: none; border: none; color: white; font-size: 3em; cursor: pointer; }
+    .close-btn { 
+        position: absolute; 
+        top: 10px; 
+        right: 20px; 
+        background: none; 
+        border: none; 
+        color: white; 
+        font-size: 3em; 
+        cursor: pointer; }
 
-    .hero-title { text-align: center; margin-bottom: 30px; }
-    .form-layout { display: flex; gap: 30px; }
+    .hero-title { 
+        text-align: center; 
+        margin-bottom: 30px; 
+    }
 
-    .image-column { flex: 0 0 240px; }
+    .form-layout { 
+        display: flex; 
+        gap: 30px; 
+    }
+
+    .image-column { 
+        flex: 0 0 240px; 
+    }
+
     .image-upload { 
-        height: 320px; border: 2px dashed var(--accent); border-radius: 10px;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        position: relative; background: rgba(0,0,0,0.3);
+        height: 320px; 
+        border: 2px dashed var(--accent); 
+        border-radius: 10px;
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center;
+        position: relative; 
+        background: rgba(0,0,0,0.3);
     }
-    .file-input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-    .plus-icon { font-size: 3em; color: var(--accent); }
 
-    .fields-column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-    .input-group { display: flex; flex-direction: column; gap: 5px; }
+    .file-input { 
+        position: absolute; 
+        width: 100%; 
+        eight: 100%; 
+        opacity: 0; 
+        cursor: pointer; 
+    }
+
+    .plus-icon { 
+        font-size: 3em; 
+        color: var(--accent); 
+    }
+
+    .fields-column { 
+        flex: 1; 
+        display: 
+        flex; flex-direction: 
+        column; gap: 15px; 
+    }
+
+    .input-group { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 5px; 
+    }
     
     input, textarea, select { 
-        background: #111126; border: 1px solid #3f3f5f; color: white; padding: 10px; border-radius: 5px;
+        background: #111126; 
+        border: 1px solid #3f3f5f; 
+        color: white; 
+        padding: 10px; 
+        border-radius: 5px;
     }
 
     /* Estilo das Sessões */
-    .sessions-section { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; }
-    .sessions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .add-btn { background: none; border: 1px solid var(--accent); color: var(--accent); padding: 4px 10px; border-radius: 4px; cursor: pointer; }
-    
-    .sessions-list { display: flex; flex-direction: column; gap: 8px; max-height: 200px; overflow-y: auto; }
-    .session-item { display: grid; grid-template-columns: 2fr 2fr 1.5fr 1.5fr auto; gap: 8px; align-items: center; }
-    
-    .del-btn { background: var(--accent); border: none; color: white; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; }
+    .sessions-section { 
+        background: rgba(0,0,0,0.2); 
+        padding: 15px; 
+        border-radius: 10px; 
+    }
 
-    .call-to-action { background: var(--accent); color: white; border: none; padding: 15px; font-weight: bold; font-size: 1.2em; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+    .sessions-header { 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        margin-bottom: 10px; 
+    }
+
+    .add-btn { 
+        background: none; 
+        border: 1px solid var(--accent); 
+        color: var(--accent); 
+        padding: 4px 10px; 
+        border-radius: 4px; 
+        cursor: pointer; 
+    }
+    
+    .sessions-list { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 8px; 
+        max-height: 200px; 
+        overflow-y: auto; 
+    }
+
+    .session-item { 
+        display: grid; 
+        grid-template-columns: 2fr 2fr 1.5fr 1.5fr auto; 
+        gap: 8px; 
+        align-items: center; 
+    }
+    
+    .del-btn { 
+        background: var(--accent); 
+        order: none; 
+        color: white; 
+        border-radius: 50%; 
+        width: 25px; 
+        height: 25px; 
+        cursor: pointer; 
+    }
+
+    .call-to-action { 
+        background: var(--accent); 
+        color: white; 
+        border: none; 
+        padding: 15px; 
+        font-weight: bold; 
+        font-size: 1.2em; 
+        border-radius: 5px; 
+        cursor: pointer; 
+        margin-top: 10px; 
+    }
     
     @media (max-width: 800px) { .form-layout { flex-direction: column; } .session-item { grid-template-columns: 1fr 1fr; } }
 </style>

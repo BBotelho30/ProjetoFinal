@@ -48,7 +48,7 @@ export const actions = {
         }
 
         try {
-            // 1. Inserir na tabela Eventos
+            // Insere na tabela Eventos
             const resEvento = await query(
                 'INSERT INTO Eventos (nome_evento, descricao, tipo_espectaculo, imagem_cartaz, id_utilizador) VALUES (?, ?, ?, ?, ?)',
                 [nome, descricao, tipo, caminhoImagem, id_utilizador]
@@ -56,7 +56,7 @@ export const actions = {
 
             const id_novo_evento = resEvento.insertId;
 
-            // 2. Inserir múltiplas sessões na tabela Eventos_Sala
+            // Insere múltiplas sessões na tabela Eventos_Sala
             if (sessoes.length > 0) {
                 for (const sessao of sessoes) {
                     await query(

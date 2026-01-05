@@ -60,8 +60,16 @@
         background: linear-gradient(45deg, var(--background-dark), var(--primary-color));
     }
 
-    .welcome-text { text-align: center; margin-bottom: 50px; color: white; }
-    .welcome-text h1 { font-size: 3em; margin-bottom: 10px; }
+    .welcome-text { 
+        text-align: center; 
+        margin-bottom: 50px; 
+        color: white; 
+    }
+
+    .welcome-text h1 { 
+        font-size: 3em; 
+        margin-bottom: 10px; 
+    }
 
     .cards-grid {
         display: grid;
@@ -81,7 +89,9 @@
         transition: transform 0.3s ease;
     }
 
-    .event-card:hover { transform: translateY(-10px); }
+    .event-card:hover { 
+        transform: translateY(-10px); 
+    }
 
     .card-image {
         height: 390px;
@@ -91,13 +101,30 @@
     }
 
     .type-tag {
-        position: absolute; top: 15px; right: 15px;
-        background: var(--secondary-color); color: #1a1a2e;
-        padding: 6px 15px; border-radius: 50px; font-size: 1em; font-weight: bold;
+        position: absolute; 
+        top: 15px; 
+        right: 15px;
+        background: var(--secondary-color); 
+        color: #1a1a2e;
+        padding: 6px 15px; 
+        border-radius: 50px; 
+        font-size: 1em; 
+        font-weight: bold;
     }
 
-    .card-info { padding: 15px; color: white; flex-grow: 1; display: flex; flex-direction: column; }
-    .card-info h3 { margin: 0 0 8px 0; font-size: 1.5em; }
+    .card-info { 
+        padding: 15px; 
+        color: white; 
+        flex-grow: 1; 
+        display: flex; 
+        flex-direction: column; 
+    }
+
+    .card-info h3 { 
+        margin: 0 0 8px 0; 
+        font-size: 1.5em; 
+    }
+
     .card-info p { 
         color: var(--text-muted); 
         font-size: 1em; 
@@ -131,5 +158,12 @@
         box-shadow: 0 5px 15px rgba(255, 0, 0, 0.4);
     }
 
-    .empty-state { color: white; text-align: center; grid-column: 1 / -1; font-size: 1.2em; }
+    .empty-state { 
+        color: white; 
+        text-align: center; 
+        grid-column: 1 / -1; 
+        font-size: 1.2em; 
+        
+    }
+
 </style>
