@@ -31,14 +31,7 @@
 
             <svg class="places-overlay" viewBox="0 0 595.28 841.89" preserveAspectRatio="xMidYMid meet">
                 {#each lugares as l}
-                    <circle 
-                        cx={l.x} 
-                        cy={l.y} 
-                        r="4" 
-                        class="seat" 
-                        class:selected={lugarSelecionado?.id_lugar === l.id_lugar} 
-                        on:click={() => selecionarLugar(l)}
-                    >
+                    <circle cx={l.x} cy={l.y} r="4" class="seat" class:selected={lugarSelecionado?.id_lugar === l.id_lugar} on:click={() => selecionarLugar(l)}>
                         <title>Fila {l.fila}, Lugar {l.num}</title>
                     </circle>
                 {/each}
@@ -68,7 +61,11 @@
         padding: 40px 20px;
     }
 
-    .checkout-header { text-align: center; margin-bottom: 30px; }
+    .checkout-header { 
+        text-align: center; 
+        margin-bottom: 30px; 
+    }
+    
     .checkout-header h1 { font-size: 2.5rem; color: #3b82f6; margin-bottom: 5px; }
 
     .room-container {

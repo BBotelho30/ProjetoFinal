@@ -139,7 +139,6 @@ $: if (form?.message) {
 {/if}
 
 <style>
-/* O teu CSS está muito bom, mantive-o com pequenos ajustes de organização */
 :root {
     --bg: #1a1a2e;
     --primary: #0f3460;

@@ -29,13 +29,10 @@
         if (!currentUser || currentUser.tipo !== 'admin') goto('/autenticacao/login');
     });
 
-    // Carrega os lugares da BD para o estado local ao mudar de sala
     function carregarDadosSala() {
         const salaAtiva = data.salas?.find(s => s.nome_sala === salaSelecionada);
         if (salaAtiva && salaAtiva.lugares_guardados) {
             lugares = salaAtiva.lugares_guardados;
-            
-            // Reconstroi passosPorZona para que o Desfazer funcione em dados vindos da BD
             passosPorZona = {};
             lugares.forEach(l => {
                 if (!passosPorZona[l.zona] || l.step > passosPorZona[l.zona]) {
@@ -48,20 +45,14 @@
         }
     }
 
-   function handleZonaClick(event: MouseEvent) {
+    function handleZonaClick(event: MouseEvent) {
         const target = event.target as SVGElement;
         const element = target?.closest('path, polygon, rect, ellipse, circle');
         if (!element) return;
-
         const grafico = element as unknown as SVGGraphicsElement;
         const bbox = grafico.getBBox();
         
-        // --- NOVO: LÓGICA PARA RECUPERAR O NOME DA ZONA ---
-        // 1. Tenta pelo ID do SVG (prioridade)
         let nomeEncontrado = element.id || '';
-
-        // 2. Se não tem ID, procura nos lugares já existentes se algum 
-        // está dentro desta área (bbox)
         if (!nomeEncontrado) {
             const lugarExistente = lugares.find(l => 
                 l.x >= bbox.x && l.x <= (bbox.x + bbox.width) &&
@@ -71,8 +62,6 @@
         }
 
         zonaSelecionada = nomeEncontrado;
-        // ------------------------------------------------
-
         const padding = 40;
         viewBoxAtiva = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
 
@@ -84,16 +73,16 @@
         svgZonaHtml = svgModal.outerHTML;
         pontosGuia = []; 
         
-        // Sincroniza o contador de passos e a letra da fila
         contadorPassos = passosPorZona[zonaSelecionada] || 0;
-        const lugaresDestaZona = lugares.filter(l => l.zona === zonaSelecionada);
+        const lugaresDestaZona = lugares.filter(l => 
+            zonaSelecionada && l.zona.toString().trim().toLowerCase() === zonaSelecionada.toString().trim().toLowerCase()
+        );
         if (lugaresDestaZona.length > 0) {
             const ultimaFila = [...lugaresDestaZona].sort((a,b) => a.step - b.step).pop()?.fila || 'A';
             nomeFila = String.fromCharCode(ultimaFila.charCodeAt(0) + 1);
         } else {
             nomeFila = 'A';
         }
-
         modalAberto = true;
     }
 
@@ -104,7 +93,6 @@
         pt.x = event.clientX; pt.y = event.clientY;
         const cursorPt = pt.matrixTransform(svgOverlay.getScreenCTM()?.inverse()); 
         if (!cursorPt) return;
-
         if (event.button === 0) {
             if (pontosGuia.length < 3) pontosGuia = [...pontosGuia, { x: cursorPt.x, y: cursorPt.y }];
         } else if (event.button === 2) {
@@ -116,29 +104,23 @@
         if (pontos.length < 2 || !zonaSelecionada) return;
         const elementoZona = document.querySelector('.svg-background svg > *');
         const margens = elementoZona.getBBox();
-
         const p0 = pontos[0];
         const p2 = pontos[pontos.length - 1];
         let p1 = pontos.length === 3 
             ? { x: 2 * pontos[1].x - 0.5 * p0.x - 0.5 * p2.x, y: 2 * pontos[1].y - 0.5 * p0.y - 0.5 * p2.y }
             : { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 };
-
         const meuStep = (passosPorZona[zonaSelecionada] || 0) + 1;
         let filaTemporaria = [];
-
         for (let i = 0; i < qtdLugares; i++) {
             const t = qtdLugares > 1 ? i / (qtdLugares - 1) : 0.5;
             const xFinal = Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x;
             const yFinal = Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y;
-
             if (xFinal < margens.x || xFinal > (margens.x + margens.width) || yFinal < margens.y || yFinal > (margens.y + margens.height)) break;
-
             filaTemporaria.push({
                 x: xFinal, y: yFinal, zona: zonaSelecionada,
                 fila: nomeFila, num: i + 1, id: Date.now() + i, step: meuStep
             });
         }
-
         if (filaTemporaria.length > 0) {
             lugares = [...lugares, ...filaTemporaria];
             passosPorZona[zonaSelecionada] = meuStep;
@@ -167,6 +149,19 @@
         modalAberto = false;
         svgZonaHtml = '';
     }
+
+    function limparZonaAtual() {
+        if (!zonaSelecionada) return;
+        if (confirm(`Desejas apagar todos os lugares da zona "${zonaSelecionada}"?`)) {
+            lugares = lugares.filter(l => 
+                l.zona.toString().trim().toLowerCase() !== zonaSelecionada.toString().trim().toLowerCase()
+            );
+            passosPorZona[zonaSelecionada] = 0;
+            contadorPassos = 0;
+            nomeFila = 'A';
+            ultimaCurva = [];
+        }
+    }
 </script>
 
 <div class="admin-container">
@@ -185,14 +180,20 @@
         </div>
         <button class="btn-new-room" on:click={() => goto('/admin/salas/adicionar_salas')}>+ Criar Nova Sala</button>
         <hr/>
-        {#if lugares.length > 0}
+        
+        {#if salaSelecionada}
             <div class="stats">
-                <p>Lugares: <strong>{lugares.length}</strong></p>
+                <p>Lugares no desenho: <strong>{lugares.length}</strong></p>
                 <form method="POST" action="?/guardarLugares" use:enhance>
                     <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
                     <input type="hidden" name="sala" value={salaSelecionada} />
-                    <button type="submit" class="btn-save">Guardar Desenho</button>
+                    <button type="submit" class="btn-save" style="background: {lugares.length === 0 ? '#ef4444' : '#10b981'}">
+                        {lugares.length === 0 ? 'Limpar Base de Dados' : 'Guardar Desenho'}
+                    </button>
                 </form>
+                {#if lugares.length === 0}
+                    <p style="color: #ef4444; font-size: 0.75rem; margin-top: 8px;">Atenção: Guardar com 0 lugares apaga tudo na BD.</p>
+                {/if}
             </div>
         {/if}
     </aside>
@@ -232,6 +233,9 @@
                 <button class="btn-gen" on:click={() => processarFila(pontosGuia)} disabled={pontosGuia.length < 2 || !zonaSelecionada}>Gerar</button>
                 <button class="btn-stamp" on:click={carimbarFila} disabled={ultimaCurva.length === 0}>+ Fila</button>
                 <button class="btn-undo" on:click={desfazer} disabled={contadorPassos === 0}>Desfazer</button>
+                <button class="btn-clear" on:click={limparZonaAtual} style="background: #ef4444; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer;">
+                    Limpar Zona 
+                </button>
             </div>
         </header>
 
@@ -239,42 +243,24 @@
             <div class="modal-body">
                 <div class="svg-layers">
                     <div class="svg-background">{@html svgZonaHtml}</div>
-                    
                    <svg class="draw-overlay" viewBox={viewBoxAtiva} on:mousedown={handleModalInteraction} on:contextmenu|preventDefault role="application">
-    
-    {#if pontosGuia.length >= 2}
-        {@const p0 = pontosGuia[0]}
-        {@const p2 = pontosGuia[pontosGuia.length - 1]}
-        {@const p1 = pontosGuia.length === 3 
-            ? { x: 2 * pontosGuia[1].x - 0.5 * p0.x - 0.5 * p2.x, y: 2 * pontosGuia[1].y - 0.5 * p0.y - 0.5 * p2.y } 
-            : { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 }
-        }
-        <path d="M {p0.x} {p0.y} Q {p1.x} {p1.y} {p2.x} {p2.y}" fill="none" stroke="#00d2ff" stroke-width="1.5" stroke-dasharray="4" opacity="0.6" />
-    {/if}
-    
-    {#each pontosGuia as p}
-        <circle cx={p.x} cy={p.y} r={RAIO_BOLA} fill="#00d2ff" stroke="#fff" stroke-width="1.5" />
-    {/each}
-    
-    {#each lugares.filter(l => 
-        zonaSelecionada && l.zona.toString().trim().toLowerCase() === zonaSelecionada.toString().trim().toLowerCase()
-    ) as l}
-        <g>
-            <circle cx={l.x} cy={l.y} r={RAIO_BOLA} fill="#e94560" stroke="#fff" stroke-width="0.8" />
-            <text 
-                x={l.x} 
-                y={l.y - (RAIO_BOLA + 2)} 
-                font-size="6" 
-                text-anchor="middle" 
-                fill="#fff" 
-                font-weight="bold" 
-                class="seat-label"
-            >
-                {l.fila}{l.num}
-            </text>
-        </g>
-    {/each}
-</svg>
+                        {#if pontosGuia.length >= 2}
+                            {@const p0 = pontosGuia[0]}
+                            {@const p2 = pontosGuia[pontosGuia.length - 1]}
+                            {@const p1 = pontosGuia.length === 3 
+                                ? { x: 2 * pontosGuia[1].x - 0.5 * p0.x - 0.5 * p2.x, y: 2 * pontosGuia[1].y - 0.5 * p0.y - 0.5 * p2.y } 
+                                : { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 }
+                            }
+                            <path d="M {p0.x} {p0.y} Q {p1.x} {p1.y} {p2.x} {p2.y}" fill="none" stroke="#00d2ff" stroke-width="1.5" stroke-dasharray="4" opacity="0.6" />
+                        {/if}
+                        {#each pontosGuia as p}<circle cx={p.x} cy={p.y} r={RAIO_BOLA} fill="#00d2ff" stroke="#fff" stroke-width="1.5" />{/each}
+                        {#each lugares.filter(l => zonaSelecionada && l.zona.toString().trim().toLowerCase() === zonaSelecionada.toString().trim().toLowerCase()) as l}
+                            <g>
+                                <circle cx={l.x} cy={l.y} r={RAIO_BOLA} fill="#e94560" stroke="#fff" stroke-width="0.8" />
+                                <text x={l.x} y={l.y - (RAIO_BOLA + 2)} font-size="6" text-anchor="middle" fill="#fff" font-weight="bold" class="seat-label">{l.fila}{l.num}</text>
+                            </g>
+                        {/each}
+                    </svg>
                 </div>
             </div>
         </div>
