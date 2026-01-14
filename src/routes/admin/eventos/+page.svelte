@@ -132,7 +132,7 @@
                     <div class="sessions-editor-box">
                         <div class="sessions-header">
                             <label>Sessões</label>
-                            <button type="button" class="add-sess-btn" on:click={adicionarSessao}>+ Sessão</button>
+                            <button type="button" class="add-sess-btn" on:click={adicionarSessao}>+ Nova Sessão</button>
                         </div>
                         <div class="sessions-list">
                             {#each eventoParaEditar.sessoes as sessao, i}
@@ -144,6 +144,7 @@
                                     </select>
                                     <input type="date" bind:value={sessao.data_espectaculo} required />
                                     <input type="time" bind:value={sessao.hora_inicio} required />
+                                    <input type="time" bind:value={sessao.duracao} title="Duração" required />
                                     <button type="button" class="del-sess-btn" on:click={() => removerSessao(i)}>&times;</button>
                                 </div>
                             {/each}
@@ -221,7 +222,24 @@
         width: 90%; max-width: 950px; color: white; position: relative;
     }
     
-    .modal-close { position: absolute; top: 15px; right: 20px; background: none; border: none; color: var(--text-light); font-size: 3.5em; cursor: pointer; }
+    .modal-close { 
+        position: absolute; 
+        top: 15px; 
+        right: 20px; 
+        background: none; 
+        border: none; 
+        color: var(--text-light); 
+        font-size: 3.5em; 
+        cursor: pointer;
+        transition: 0.3s ease;
+    }
+    
+    .modal-close:hover {
+        color: var(--secondary-color);
+        transform: rotate(90deg);
+    }
+    
+    
     .form-layout { display: flex; gap: 40px; }
     .image-column { flex: 0 0 260px; }
     .image-upload-modal { 
@@ -241,12 +259,18 @@
     .sessions-header { 
         display: flex; 
         justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .add-sess-btn { background: var(--primary-color); border: 1px solid var(--secondary-color); color: white; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
-    
+    .add-sess-btn {  background: none;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
     .sessions-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
     .session-row { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 1fr auto; gap: 8px; align-items: center; }
     .session-row select, .session-row input { background: #16162d; border: 1px solid var(--border-color); color: white; padding: 6px; border-radius: 5px; font-size: 0.85em; }
-    .del-sess-btn { background: var(--secondary-color); border: none; color: white; border-radius: 5px; cursor: pointer; padding: 2px 8px; }
+    .del-sess-btn { background: var(--secondary-color); border: none; color: var(--background-dark); border-radius: 5px; cursor: pointer; padding: 1.2px 8px; font-size: 1.45em; font-weight: bold; }
 
     .btn-save { 
         width: 100%; background: var(--secondary-color); color: #1a1a2e; border: none; 
@@ -256,7 +280,11 @@
     .fields-column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
     .input-group { display: flex; flex-direction: column; gap: 5px; }
     .input-group input, .input-group textarea { background: #16162d; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; }
-
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.8);
+    cursor: pointer;
+}
 
 
     

@@ -175,6 +175,12 @@ $: if (form?.message) {
     font-size: 3em;
     cursor: pointer;
     z-index: 10;
+    transition: 0.3s ease;
+}
+
+.close-btn:hover {
+    color: #ff0000;
+    transform: rotate(90deg);
 }
 
 .hero-title {
@@ -348,5 +354,11 @@ input, textarea, select {
 @keyframes slideIn {
     from { transform: translateY(-100px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(0.8);
+    cursor: pointer;
 }
 </style>
