@@ -1,22 +1,34 @@
 <script>
     // @ts-nocheck
     import { user } from '$lib/userStore';
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { goto, invalidateAll } from '$app/navigation';
     import { enhance } from '$app/forms';
 
     export let data;
-    $: ({ eventos = [], salas = [] } = data);
+    $: eventos = data?.eventos || [];
+    $: salas = data?.salas || [];
 
     let showModal = false;
     let eventoParaEditar = { sessoes: [] };
     let novaImagem = '';
 
-    function abrirEdicao(evento) {
-        eventoParaEditar = JSON.parse(JSON.stringify(evento));
-        if (!eventoParaEditar.sessoes) eventoParaEditar.sessoes = [];
-        novaImagem = eventoParaEditar.imagem_cartaz;
+    async function abrirEdicao(evento) {
+        const copia = JSON.parse(JSON.stringify(evento));
+        copia.sessoes = (copia.sessoes || []).map(s => ({
+            ...s,
+            data_espectaculo: s.data_espectaculo ? s.data_espectaculo.split('T')[0] : ''
+        }));
+        eventoParaEditar = copia;
+        novaImagem = eventoParaEditar.imagem_cartaz || '';
         showModal = true;
+        await tick();
+    }
+
+    function fecharModal() {
+        showModal = false;
+        eventoParaEditar = { sessoes: [] };
+        novaImagem = '';
     }
 
     function adicionarSessao() {
@@ -34,15 +46,9 @@
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = (event) => { novaImagem = event.target.result; };
+            reader.onload = (ev) => { novaImagem = ev.target.result; };
             reader.readAsDataURL(file);
         }
-    }
-
-    function fecharModal() {
-        showModal = false;
-        eventoParaEditar = { sessoes: [] };
-        novaImagem = '';
     }
 
     $: sessoesJSON = JSON.stringify(eventoParaEditar.sessoes);
@@ -55,29 +61,23 @@
 <main class="admin-dashboard">
     <div class="welcome-text">
         <h1>Lista de Espetáculos</h1>
-        <a href="/admin/adiciona_espetaculo" class="btn-add-event">
-            + Adicionar Espetáculo
-        </a>
+        <a href="/admin/adiciona_espetaculo" class="btn-add-event">+ Adicionar Espetáculo</a>
     </div>
 
     <div class="cards-grid">
         {#each eventos as evento}
             <div class="event-card">
-                <div class="card-image" style="background-image: url('{evento.imagem_cartaz || 'https://via.placeholder.com/400x600?text=Sem+Imagem'}')">
+                <div class="card-image" style="background-image: url('{evento.imagem_cartaz || ''}')">
                     <span class="type-tag">{evento.tipo_espectaculo}</span>
                 </div>
                 <div class="card-info">
                     <h3>{evento.nome_evento}</h3>
-                    <p>{evento.descricao || 'Sem descrição.'}</p>
                     <div class="card-actions">
                         <button class="action-btn edit" on:click={() => abrirEdicao(evento)}>Editar</button>
-                        
                         <form method="POST" action="?/eliminar" use:enhance>
                             <input type="hidden" name="id" value={evento.id_eventos} />
                             <button type="submit" class="action-btn delete" on:click={(e) => {
-                                if (!confirm(`Tem a certeza que deseja eliminar "${evento.nome_evento}"?`)) {
-                                    e.preventDefault();
-                                }
+                                if(!confirm('Deseja eliminar este evento?')) e.preventDefault();
                             }}>Eliminar</button>
                         </form>
                     </div>
@@ -91,7 +91,7 @@
 <div class="modal-overlay">
     <div class="modal-content">
         <button class="modal-close" on:click={fecharModal}>&times;</button>
-        <h2>Editar Espetáculo</h2>
+        <h2>Editar: {eventoParaEditar.nome_evento}</h2>
         
         <form method="POST" action="?/editar" use:enhance={() => {
             return async ({ result }) => {
@@ -103,52 +103,47 @@
         }}>
             <input type="hidden" name="id" value={eventoParaEditar.id_eventos} />
             <input type="hidden" name="sessoes_data" value={sessoesJSON} />
+            <input type="hidden" name="nova-imagem" value={novaImagem} />
 
             <div class="form-layout">
                 <div class="image-column">
-                    <div class="image-upload-modal">
-                        {#if novaImagem}
-                            <img src={novaImagem} alt="Preview" class="preview-img" />
-                        {:else if eventoParaEditar.imagem_cartaz}
-                            <img src={eventoParaEditar.imagem_cartaz} alt="Cartaz atual" class="preview-img" />
-                        {:else}
-                            <p>CARTAZ DO EVENTO</p>
-                            <span class="plus-icon">+</span>
-                        {/if}
+                    <div class="image-upload-modal" style="background-image: url({novaImagem}); background-size: cover; background-position: center;">
+                        {#if !novaImagem}<p>ALTERAR CARTAZ</p>{/if}
                         <input type="file" accept="image/*" on:change={handleFileChange} class="file-input" />
-                        <input type="hidden" name="nova-imagem" value={novaImagem} />
                     </div>
-                    <small class="hint">Formatos: JPG, PNG ou WEBP</small>
                 </div>
 
                 <div class="fields-column">
                     <div class="input-group">
-                        <label>Nome do Evento</label>
-                        <input type="text" name="nome" bind:value={eventoParaEditar.nome_evento} required />
+                        <label for="edit-nome">Nome</label>
+                        <input id="edit-nome" type="text" name="nome" bind:value={eventoParaEditar.nome_evento} required />
                     </div>
 
                     <div class="input-group">
-                        <label>Descrição</label>
-                        <textarea name="descricao" bind:value={eventoParaEditar.descricao} rows="2"></textarea>
+                        <label for="edit-descricao">Descrição</label>
+                        <textarea id="edit-descricao" name="descricao" bind:value={eventoParaEditar.descricao} rows="2"></textarea>
                     </div>
 
+                    <div class="input-group">
+                        <label for="edit-tipo">Tipo de Espetáculo</label>
+                        <input id="edit-tipo" type="text" name="tipo" bind:value={eventoParaEditar.tipo_espectaculo} placeholder="Cinema, Teatro..." />
+                    </div>
+                    
                     <div class="sessions-editor-box">
                         <div class="sessions-header">
-                            <label>Sessões Agendadas</label>
+                            <label>Sessões</label>
                             <button type="button" class="add-sess-btn" on:click={adicionarSessao}>+ Sessão</button>
                         </div>
                         <div class="sessions-list">
                             {#each eventoParaEditar.sessoes as sessao, i}
                                 <div class="session-row">
                                     <select bind:value={sessao.id_sala} required>
-                                        <option value="" disabled>Sala</option>
                                         {#each salas as sala}
                                             <option value={sala.id_sala}>{sala.nome_sala}</option>
                                         {/each}
                                     </select>
                                     <input type="date" bind:value={sessao.data_espectaculo} required />
                                     <input type="time" bind:value={sessao.hora_inicio} required />
-                                    <input type="time" bind:value={sessao.duracao} title="Duração" required />
                                     <button type="button" class="del-sess-btn" on:click={() => removerSessao(i)}>&times;</button>
                                 </div>
                             {/each}
@@ -164,7 +159,6 @@
 {/if}
 
 <style>
-    /* TODOS OS TEUS ESTILOS ORIGINAIS RECUPERADOS */
     :root { 
         --primary-color: #0f3460; 
         --secondary-color: #ff0000; 
@@ -237,12 +231,16 @@
     .preview-img { width: 100%; height: 100%; object-fit: contain; }
     .file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-    /* ESTILO NOVO PARA SESSÕES INTEGRADO */
     .sessions-editor-box {
-        background: rgba(0,0,0,0.2); border: 1px solid var(--border-color);
-        padding: 15px; border-radius: 10px; margin-top: 10px;
+        background: rgba(0,0,0,0.2); 
+        border: 1px solid var(--border-color);
+        padding: 15px; 
+        border-radius: 10px; 
+        margin-top: 10px;
     }
-    .sessions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .sessions-header { 
+        display: flex; 
+        justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .add-sess-btn { background: var(--primary-color); border: 1px solid var(--secondary-color); color: white; padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
     
     .sessions-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
@@ -258,4 +256,8 @@
     .fields-column { flex: 1; display: flex; flex-direction: column; gap: 15px; }
     .input-group { display: flex; flex-direction: column; gap: 5px; }
     .input-group input, .input-group textarea { background: #16162d; border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; }
+
+
+
+    
 </style>

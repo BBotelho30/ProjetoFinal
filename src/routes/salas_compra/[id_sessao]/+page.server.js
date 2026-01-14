@@ -7,9 +7,8 @@ export async function load({ params, url }) {
     const id_evento = url.searchParams.get('evento');
 
     try {
-        // Vai buscar informação da sessão e nome da sala
         const sessaoRes = await query(`
-            SELECT s.id_sala, s.nome_sala, es.hora_inicio, e.nome_evento
+            SELECT s.id_sala, s.nome_sala, s.svg_code, es.hora_inicio, e.nome_evento
             FROM Sala s
             JOIN Eventos_Sala es ON s.id_sala = es.id_sala
             JOIN Eventos e ON es.id_eventos = e.id_eventos
@@ -18,7 +17,6 @@ export async function load({ params, url }) {
 
         if (sessaoRes.length === 0) throw error(404, 'Sessão não encontrada');
 
-        //Vai buscar todos os lugares mapeados para esta sala
         const lugares = await query(`
             SELECT id_lugar, fila, coluna as num, coordenadas_x as x, coordenadas_y as y, id_zona
             FROM Lugar 
