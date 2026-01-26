@@ -25,7 +25,8 @@ export async function load() {
                         ...s,
                         data_espectaculo: dataFormatada,
                         hora_inicio: s.hora_inicio ? s.hora_inicio.slice(0, 5) : "00:00",
-                        duracao: s.duracao ? s.duracao.slice(0, 5) : '02:00'
+                        duracao: s.duracao ? s.duracao.slice(0, 5) : '01:30',
+                        limite_bilhetes: s.limite_bilhetes || 10
                     };
                 });
 
@@ -74,8 +75,8 @@ export const actions = {
             await query('DELETE FROM Eventos_Sala WHERE id_eventos = ?', [id]);
             for (const s of sessoes) {
                 await query(
-                    'INSERT INTO Eventos_Sala (id_eventos, id_sala, hora_inicio, data_espectaculo, duracao) VALUES (?, ?, ?, ?, ?)',
-                    [id, s.id_sala, s.hora_inicio, s.data_espectaculo, s.duracao]
+                    'INSERT INTO Eventos_Sala (id_eventos, id_sala, hora_inicio, data_espectaculo, duracao, limite_bilhetes) VALUES (?, ?, ?, ?, ?, ?)',
+                    [id, s.id_sala, s.hora_inicio, s.data_espectaculo, s.duracao, s.limite_bilhetes]
                 );
             }
             return { success: true };

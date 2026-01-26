@@ -16,7 +16,7 @@ onMount(() => {
 });
 
 let nomeFicheiro = '';
-let sessoes = [{ id_sala: '', data: '', hora: '', duracao: '01:30' }];
+let sessoes = [{ id_sala: '', data: '', hora: '', duracao: '01:30', limite_bilhetes: 10 }];
 
 // --- LÓGICA DE EDIÇÃO: Sincroniza os dados vindos do servidor ---
 $: if (data?.evento?.sessoes) {
@@ -24,7 +24,7 @@ $: if (data?.evento?.sessoes) {
 }
 
 function adicionarSessao() {
-    sessoes = [...sessoes, { id_sala: '', data: '', hora: '', duracao: '01:30' }];
+    sessoes = [...sessoes, { id_sala: '', data: '', hora: '', duracao: '01:30', limite_bilhetes: 10 }];
 }
 
 function removerSessao(index) {
@@ -108,6 +108,11 @@ $: if (form?.message) {
                                 <input type="date" bind:value={sessao.data} required />
                                 <input type="time" bind:value={sessao.hora} required />
                                 <input type="time" bind:value={sessao.duracao} title="Duração" required />
+
+                                <div class="ticket-limit">
+
+                                <input type="number" bind:value={sessao.limite_bilhetes} min="1" max="10" title="Limite de bilhetes por compra" required />
+                            </div>
                                 
                                 {#if sessoes.length > 1}
                                     <button type="button" class="del-btn" on:click={() => removerSessao(i)}>&times;</button>
@@ -361,4 +366,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(1) brightness(0.8);
     cursor: pointer;
 }
+
+
+
 </style>

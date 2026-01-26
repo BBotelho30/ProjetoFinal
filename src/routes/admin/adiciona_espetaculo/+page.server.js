@@ -20,7 +20,6 @@ export const load = async ({ url }) => {
                 // Carrega as sessões associadas
                 const sessoesDaBD = await query('SELECT * FROM Eventos_Sala WHERE id_eventos = ?', [id_editar]);
 
-                // FORMATAÇÃO DA DATA: Essencial para aparecer no Chrome/Safari
                 evento.sessoes = sessoesDaBD.map(s => {
                     const d = new Date(s.data_espectaculo);
                     const ano = d.getFullYear();
@@ -31,7 +30,8 @@ export const load = async ({ url }) => {
                         id_sala: s.id_sala,
                         data: `${ano}-${mes}-${dia}`, // Formato YYYY-MM-DD
                         hora: s.hora_inicio.slice(0, 5),
-                        duracao: s.duracao ? s.duracao.slice(0, 5) : '01:30'
+                        duracao: s.duracao ? s.duracao.slice(0, 5) : '01:30',
+                        limite_bilhetes: s.limite_bilhetes || 10
                     };
                 });
             }
@@ -60,7 +60,7 @@ export const actions = {
         const sessoesRaw = data.get('sessoes_data');
         const sessoes = JSON.parse(sessoesRaw || '[]');
 
-        // 1. Verificação de Conflitos (Melhorada para ignorar o próprio evento em edição)
+        // Verificação de Conflitos de Agendamento
         for (const sessao of sessoes) {
             const conflito = await query(`
                 SELECT e.nome_evento, es.hora_inicio, s.nome_sala
@@ -69,7 +69,7 @@ export const actions = {
                 JOIN Sala s ON es.id_sala = s.id_sala
                 WHERE es.id_sala = ?
                 AND es.data_espectaculo = ?
-                AND es.id_eventos != ? -- IGNORA O PRÓPRIO EVENTO NA EDIÇÃO
+                AND es.id_eventos != ? 
                 AND (
                     (? BETWEEN es.hora_inicio AND ADDTIME(es.hora_inicio, es.duracao))
                     OR
@@ -85,7 +85,6 @@ export const actions = {
             }
         }
 
-        // 2. Processamento da Imagem
         let caminhoImagem = imagem_atual || ''; // Se não mudar a foto, mantém a antiga
 
         if (ficheiro && ficheiro instanceof Object && ficheiro.name && ficheiro.size > 0) {
@@ -113,7 +112,8 @@ export const actions = {
                 // Limpa sessões antigas para reinserir as novas
                 await query('DELETE FROM Eventos_Sala WHERE id_eventos = ?', [id_evento]);
             } else {
-                // MODO NOVO: Insere Evento
+
+                // MODO CRIAÇÃO: Insere Novo Evento
                 const resEvento = await query(
                     'INSERT INTO Eventos (nome_evento, descricao, tipo_espectaculo, imagem_cartaz, id_utilizador) VALUES (?, ?, ?, ?, ?)',
                     [nome, descricao, tipo, caminhoImagem, id_utilizador]
@@ -121,11 +121,11 @@ export const actions = {
                 id_final = resEvento.insertId;
             }
 
-            // 3. Insere Sessões (comum a ambos os modos)
+            // Insere Sessões (comum a ambos os modos)
             for (const sessao of sessoes) {
                 await query(
-                    'INSERT INTO Eventos_Sala (id_eventos, id_sala, hora_inicio, data_espectaculo, duracao) VALUES (?, ?, ?, ?, ?)',
-                    [id_final, sessao.id_sala, sessao.hora, sessao.data, sessao.duracao]
+                    'INSERT INTO Eventos_Sala (id_eventos, id_sala, hora_inicio, data_espectaculo, duracao, limite_bilhetes) VALUES (?, ?, ?, ?, ?, ?)',
+                    [id_final, sessao.id_sala, sessao.hora, sessao.data, sessao.duracao, sessao.limite_bilhetes || 10]
                 );
             }
 

@@ -34,7 +34,7 @@
     function adicionarSessao() {
         eventoParaEditar.sessoes = [
             ...eventoParaEditar.sessoes, 
-            { id_sala: '', data_espectaculo: '', hora_inicio: '', duracao: '02:00' }
+            { id_sala: '', data_espectaculo: '', hora_inicio: '', duracao: '01:30' , limite_bilhetes: 10 }
         ];
     }
 
@@ -145,6 +145,7 @@
                                     <input type="date" bind:value={sessao.data_espectaculo} required />
                                     <input type="time" bind:value={sessao.hora_inicio} required />
                                     <input type="time" bind:value={sessao.duracao} title="Duração" required />
+                                    <input type="number" bind:value={sessao.limite_bilhetes} min="1"  max = "10" title="Limite por compra"  required />
                                     <button type="button" class="del-sess-btn" on:click={() => removerSessao(i)}>&times;</button>
                                 </div>
                             {/each}
@@ -268,7 +269,12 @@
     }
 
     .sessions-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .session-row { display: grid; grid-template-columns: 1.5fr 1.5fr 1fr 1fr auto; gap: 8px; align-items: center; }
+    .session-row { 
+    display: grid; 
+    grid-template-columns: 1.5fr 1.5fr 1fr 1fr 0.8fr auto; 
+    gap: 8px; 
+    align-items: center; 
+}
     .session-row select, .session-row input { background: #16162d; border: 1px solid var(--border-color); color: white; padding: 6px; border-radius: 5px; font-size: 0.85em; }
     .del-sess-btn { background: var(--secondary-color); border: none; color: var(--background-dark); border-radius: 5px; cursor: pointer; padding: 1.2px 8px; font-size: 1.45em; font-weight: bold; }
 
@@ -287,5 +293,4 @@
 }
 
 
-    
 </style>

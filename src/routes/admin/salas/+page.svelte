@@ -23,6 +23,7 @@
     let ultimaCurva = []; 
     let contadorPassos = 0;
     let passosPorZona = {};
+    let showToast = false;
 
     onMount(() => {
         const currentUser = $user;
@@ -100,27 +101,52 @@
         }
     }
 
-    function processarFila(pontos) {
+ function processarFila(pontos) {
         if (pontos.length < 2 || !zonaSelecionada) return;
+        
         const elementoZona = document.querySelector('.svg-background svg > *');
+        if (!elementoZona) return;
+        
         const margens = elementoZona.getBBox();
         const p0 = pontos[0];
         const p2 = pontos[pontos.length - 1];
+        
         let p1 = pontos.length === 3 
             ? { x: 2 * pontos[1].x - 0.5 * p0.x - 0.5 * p2.x, y: 2 * pontos[1].y - 0.5 * p0.y - 0.5 * p2.y }
             : { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 };
+
         const meuStep = (passosPorZona[zonaSelecionada] || 0) + 1;
         let filaTemporaria = [];
+        let foraDosLimites = false;
+
         for (let i = 0; i < qtdLugares; i++) {
             const t = qtdLugares > 1 ? i / (qtdLugares - 1) : 0.5;
             const xFinal = Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x;
             const yFinal = Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y;
-            if (xFinal < margens.x || xFinal > (margens.x + margens.width) || yFinal < margens.y || yFinal > (margens.y + margens.height)) break;
+
+            
+            if (
+                xFinal < margens.x || 
+                xFinal > (margens.x + margens.width) || 
+                yFinal < margens.y || 
+                yFinal > (margens.y + margens.height)
+            ) {
+                foraDosLimites = true;
+                break; // Interrompe a criação dessa fila
+            }
+
             filaTemporaria.push({
                 x: xFinal, y: yFinal, zona: zonaSelecionada,
                 fila: nomeFila, num: i + 1, id: Date.now() + i, step: meuStep
             });
         }
+
+        if (foraDosLimites) {
+            alert(`Aviso: A fila da zona "${zonaSelecionada}" ultrapassou as bordas permitidas e não foi criada.`);
+            pontosGuia = []; // Limpa os pontos para o utilizador tentar de novo
+            return;
+        }
+
         if (filaTemporaria.length > 0) {
             lugares = [...lugares, ...filaTemporaria];
             passosPorZona[zonaSelecionada] = meuStep;
@@ -162,6 +188,18 @@
             ultimaCurva = [];
         }
     }
+
+    function handleGuardar() {
+        return async ({ result }) => {
+            if (result.type === 'success') {
+                alert('Sucesso! O desenho da sala foi guardado na base de dados.');
+                // Opcional: recarregar os dados da página para atualizar o load
+                location.reload(); 
+            } else if (result.type === 'failure') {
+                alert('Erro: Não foi possível guardar o desenho. Verifique a consola.');
+            }
+        };
+    }
 </script>
 
 <div class="admin-container">
@@ -182,21 +220,20 @@
         <hr/>
         
         {#if salaSelecionada}
-            <div class="stats">
-                <p>Lugares no desenho: <strong>{lugares.length}</strong></p>
-                <form method="POST" action="?/guardarLugares" use:enhance>
-                    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
-                    <input type="hidden" name="sala" value={salaSelecionada} />
-                    <button type="submit" class="btn-save" style="background: {lugares.length === 0 ? '#ef4444' : '#10b981'}">
-                        {lugares.length === 0 ? 'Limpar Base de Dados' : 'Guardar Desenho'}
-                    </button>
-                </form>
-                {#if lugares.length === 0}
-                    <p style="color: #ef4444; font-size: 0.75rem; margin-top: 8px;">Atenção: Guardar com 0 lugares apaga tudo na BD.</p>
-                {/if}
-            </div>
-        {/if}
-    </aside>
+        <div class="stats">
+            <p>Lugares no desenho: <strong>{lugares.length}</strong></p>
+            
+            <form method="POST" action="?/guardarLugares" use:enhance={handleGuardar}>
+                <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
+                <input type="hidden" name="sala" value={salaSelecionada} />
+                
+                <button type="submit" class="btn-save" style="background: {lugares.length === 0 ? '#ef4444' : '#10b981'}">
+                    {lugares.length === 0 ? 'Apagar' : 'Guardar Desenho'}
+                </button>
+            </form>
+        </div>
+    {/if}
+</aside>
 
     <main class="editor-main">
         {#if salaSelecionada}
@@ -271,6 +308,12 @@
 </div>
 {/if}
 
+    {#if showToast}
+        <div class="toast">
+            Desenho guardado com sucesso!
+        </div>
+    {/if}
+
 <style>
     .admin-container { display: flex; height: 100vh; background: #0f172a; color: #fff; }
     .sidebar { width: 300px; background: #1e293b; padding: 25px; border-right: 1px solid #334155; }
@@ -297,4 +340,49 @@
     .btn-close { width: 100%; background: #475569; color: #fff; border: none; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
     input[type="number"] { width: 70px; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; }
     .seat-label { pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+
+    .toast-notification {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #10b981;
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-weight: bold;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        z-index: 99999;
+        animation: slideIn 0.3s ease-out;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(100px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
 </style>

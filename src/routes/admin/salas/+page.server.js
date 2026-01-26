@@ -4,10 +4,9 @@ import { fail } from '@sveltejs/kit';
 
 export const load = async () => {
     try {
-        // 1. Carrega todas as salas primeiro (garante que a lista não fica vazia)
         const salas = await query('SELECT id_sala, nome_sala, svg_code FROM Sala');
 
-        // No load, remove o l.step da query
+        // Mantemos a query sem o step, como pediste
         const lugaresBD = await query(`
             SELECT 
                 l.coordenadas_x as x, 
@@ -20,7 +19,6 @@ export const load = async () => {
             INNER JOIN Zona z ON l.id_zona = z.id_zona
         `).catch(() => []);
 
-        // 3. Mapeia os lugares para as suas respetivas salas
         const salasComLugares = salas.map(s => ({
             ...s,
             lugares_guardados: lugaresBD.filter(l => l.id_sala === s.id_sala)
@@ -34,53 +32,56 @@ export const load = async () => {
 };
 
 export const actions = {
-guardarLugares: async ({ request }) => {
-    const data = await request.formData();
-    const lugaresRaw = data.get('lugares');
-    const nomeSala = data.get('sala');
+    guardarLugares: async ({ request }) => {
+        const data = await request.formData();
+        const lugaresRaw = data.get('lugares');
+        const nomeSala = data.get('sala');
 
-    const lugares = JSON.parse(lugaresRaw || '[]');
+        const lugares = JSON.parse(lugaresRaw || '[]');
 
-    try {
-        const salaRes = await query('SELECT id_sala FROM Sala WHERE nome_sala = ?', [nomeSala]);
-        const id_sala = salaRes[0].id_sala;
+        try {
+            const salaRes = await query('SELECT id_sala FROM Sala WHERE nome_sala = ?', [nomeSala]);
+            if (salaRes.length === 0) return fail(404, { message: 'Sala não encontrada' });
+            const id_sala = salaRes[0].id_sala;
 
-        // 1. LIMPEZA TOTAL (Obrigatória para apagar ou atualizar)
-        // Primeiro filhos, depois pais
-        await query('DELETE FROM Lugar WHERE id_sala = ?', [id_sala]);
-        await query('DELETE FROM Zona WHERE id_sala = ?', [id_sala]);
+            await query('DELETE FROM Lugar WHERE id_sala = ?', [id_sala]);
+            await query('DELETE FROM Zona WHERE id_sala = ?', [id_sala]);
 
-        // 2. Se o utilizador limpou a sala no site, o array vem []
-        // O código para aqui e a sala fica vazia na BD como desejado.
-        if (lugares.length === 0) {
-            return { success: true, message: 'Sala limpa com sucesso.' };
-        }
-
-        // 3. Se houver lugares, reinsere-os
-        const mapaZonas = {};
-        for (const l of lugares) {
-            if (!mapaZonas[l.zona]) {
-                const novaZona = await query(
-                    'INSERT INTO Zona (nome_zona, id_sala) VALUES (?, ?)',
-                    [l.zona, id_sala]
-                );
-                mapaZonas[l.zona] = novaZona.insertId;
+            if (lugares.length === 0) {
+                return { success: true, message: 'Sala limpa.' };
             }
-            const id_zona_final = mapaZonas[l.zona];
 
-            await query(
-                `INSERT INTO Lugar (fila, coluna, coordenadas_x, coordenadas_y, id_sala, id_zona, step) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [l.fila, l.num, Math.round(l.x), Math.round(l.y), id_sala, id_zona_final, l.step || 1]
-            );
+            const mapaZonas = {};
+            for (const l of lugares) {
+                if (!mapaZonas[l.zona]) {
+                    const novaZona = await query(
+                        'INSERT INTO Zona (nome_zona, id_sala) VALUES (?, ?)',
+                        [l.zona, id_sala]
+                    );
+                    mapaZonas[l.zona] = novaZona.insertId;
+                }
+                const id_zona_final = mapaZonas[l.zona];
+
+                await query(
+                    `INSERT INTO Lugar (fila, coluna, coordenadas_x, coordenadas_y, id_sala, id_zona) 
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [
+                        l.fila, 
+                        l.num, 
+                        Math.round(l.x), 
+                        Math.round(l.y), 
+                        id_sala, 
+                        id_zona_final
+                    ]
+                );
+            }
+
+            return { success: true };
+        } catch (err) {
+            console.error("ERRO AO GUARDAR:", err);
+            return fail(500, { message: 'Erro ao processar base de dados.' });
         }
-
-        return { success: true };
-    } catch (err) {
-        console.error(err);
-        return fail(500, { message: 'Erro ao processar.' });
-    }
-},
+    },
 
     criarSala: async ({ request }) => {
         const data = await request.formData();

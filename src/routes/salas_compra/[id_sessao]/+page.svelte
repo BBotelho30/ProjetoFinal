@@ -3,12 +3,20 @@
     export let data;
     const { sessao, lugares } = data;
 
-    let lugarSelecionado = null;
+    let lugarSelecionado = [];
 
     function selecionarLugar(lugar) {
-        lugarSelecionado = lugar;
-        console.log("Lugar escolhido:", lugar);
+
+        const index = lugarSelecionado.findIndex(l => l.id_lugar === lugar.id_lugar);
+
+        if(index === -1) {
+            lugarSelecionado = [...lugarSelecionado, lugar];
+        } else {
+            lugarSelecionado = lugarSelecionado.filter(l => l.id_lugar !== lugar.id_lugar);
+        }
+        console.log("Lugares escolhidos",lugarSelecionado);
     }
+
 </script>
 
 <div class="checkout-page">
@@ -18,7 +26,7 @@
     </header>
 
     <main class="room-container">
-        <div class="screen-indicator">ECRÃ / PALCO</div>
+        
 
         <div class="svg-wrapper">
             <div class="room-svg">
@@ -30,24 +38,26 @@
             </div>
 
             <svg class="places-overlay" viewBox="0 0 595.28 841.89" preserveAspectRatio="xMidYMid meet">
-                {#each lugares as l}
-                    <circle cx={l.x} cy={l.y} r="4" class="seat" class:selected={lugarSelecionado?.id_lugar === l.id_lugar} on:click={() => selecionarLugar(l)}>
-                        <title>Fila {l.fila}, Lugar {l.num}</title>
-                    </circle>
-                {/each}
+               {#each lugares as l}
+                        <circle cx={l.x} cy={l.y} r="4" class="seat" class:selected={lugarSelecionado.some(sel => sel.id_lugar === l.id_lugar)} on:click={() => selecionarLugar(l)}>
+                            <title>Fila {l.fila}, Lugar {l.num}</title>
+                        </circle>
+                    {/each}
             </svg>
         </div>
     </main>
 
-    {#if lugarSelecionado}
-        <div class="selection-footer">
-            <div class="info-text">
-                <p>Lugar Selecionado:</p>
-                <strong>Fila {lugarSelecionado.fila}, Lugar {lugarSelecionado.num}</strong>
-            </div>
-            <button class="confirm-btn">Confirmar Reserva</button>
+    {#if lugarSelecionado.length > 0}
+    <div class="selection-footer">
+        <div class="info-text">
+            <p>{lugarSelecionado.length} Lugar(es) Selecionado(s):</p>
+            <strong>
+                {lugarSelecionado.map(l => `${l.fila}${l.num}`).join(', ')}
+            </strong>
         </div>
-    {/if}
+        <button class="confirm-btn">Confirmar {lugarSelecionado.length} Reserva(s)</button>
+    </div>
+{/if}
 </div>
 
 <style>
@@ -94,7 +104,7 @@
         justify-content: center;
         align-items: flex-end;
         padding-bottom: 15px;
-        border-bottom: 4px solid #cbd5e1;
+        border-bottom: 4px solid #144785;
     }
 
     .svg-wrapper {
@@ -119,7 +129,7 @@
     }
 
     .seat {
-        fill: #94a3b8;
+        fill: #0fad27;
         stroke: #1e293b;
         stroke-width: 0.5;
         cursor: pointer;
@@ -133,7 +143,7 @@
     }
 
     .seat.selected {
-        fill: #10b981;
+        fill: #807f84;
         stroke: #064e3b;
         r: 7;
     }
