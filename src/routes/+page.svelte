@@ -23,6 +23,8 @@
         --text-light: #e0e0e0;
         --text-muted: #888;
         --border-color: #3f3f5f;
+        --background-color: #2f78a5;
+        --second-background-color: #0f3460;
     }
 
     .hero-section {
@@ -30,7 +32,7 @@
         min-height: 90vh;
         
         /* cor de fundo na secção principal */
-        background: linear-gradient(45deg, var(--background-dark), var(--primary-color));
+        background: linear-gradient(45deg, var(--background-dark), var(--second-background-color));
         
         display: flex;
         justify-content: center;

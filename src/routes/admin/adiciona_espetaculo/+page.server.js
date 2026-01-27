@@ -56,6 +56,7 @@ export const actions = {
         const ficheiro = data.get('imagem_ficheiro');
         const imagem_atual = data.get('imagem_atual'); // Campo hidden que adicionámos no Svelte
         const id_utilizador = 1;
+        
 
         const sessoesRaw = data.get('sessoes_data');
         const sessoes = JSON.parse(sessoesRaw || '[]');
