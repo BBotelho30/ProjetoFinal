@@ -7,6 +7,25 @@
 
     export let data;
     $: eventos = data?.eventos || [];
+    $: tiposExistentes = [...new Set((eventos || []).map(e => e.tipo_espectaculo?.toLowerCase()).filter(Boolean))];
+
+    let filtroTipo = "Todos";
+    let pesquisa = "";
+
+    $: eventosFiltrados = eventos.filter(e => {
+        const correspondeTipo =
+            filtroTipo === "Todos" ||
+            e.tipo_espectaculo?.toLowerCase() === filtroTipo.toLowerCase();
+
+        const correspondeNome =
+            e.nome_evento.toLowerCase().includes(pesquisa.toLowerCase());
+
+        return correspondeTipo && correspondeNome;
+    });
+
+    const formatarTexto = (txt) =>
+        txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
+
     $: salas = data?.salas || [];
 
     let showModal = false;
@@ -61,11 +80,42 @@
 <main class="admin-dashboard">
     <div class="welcome-text">
         <h1>Lista de Espetáculos</h1>
-        <a href="/admin/adiciona_espetaculo" class="btn-add-event">+ Adicionar Espetáculo</a>
+        
+        <div class="add-button-wrapper">
+            <a href="/admin/adiciona_espetaculo" class="btn-add-event">
+                + Adicionar Espetáculo
+            </a>
+        </div>
+    </div>
+        
+    <div class="filter-wrapper">
+        <div class="filter-bar">
+            <label for="tipo">FILTRAR POR:</label>
+            <select id="tipo" bind:value={filtroTipo}>
+                <option value="Todos">Todos os tipos</option>
+                {#each tiposExistentes as tipo}
+                    <option value={tipo}>{formatarTexto(tipo)}</option>
+                {/each}
+            </select>
+        </div>
+
+        <div class="search-bar">
+            <input 
+                type="text" 
+                placeholder="PESQUISAR EVENTO..." 
+                bind:value={pesquisa} 
+            />
+            <span class="search-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" width="20px" height="20px">
+                    <path d="M 21 3 C 11.6 3 4 10.6 4 20 C 4 29.4 11.6 37 21 37 C 24.3 37 27.4 36 30.1 34.3 L 42.3 46.6 L 46.6 42.3 L 34.5 30.3 C 36.6 27.4 38 23.8 38 20 C 38 10.6 30.4 3 21 3 Z M 21 7 C 28.2 7 34 12.8 34 20 C 34 27.2 28.2 33 21 33 C 13.8 33 8 27.2 8 20 C 8 12.8 13.8 7 21 7 Z"/>
+                </svg>
+            </span>
+        </div>
     </div>
 
+
     <div class="cards-grid">
-        {#each eventos as evento}
+        {#each eventosFiltrados as evento}
             <div class="event-card">
                 <div class="card-image" style="background-image: url('{evento.imagem_cartaz || ''}')">
                     <span class="type-tag">{evento.tipo_espectaculo}</span>
@@ -126,7 +176,7 @@
 
                     <div class="input-group">
                         <label for="edit-tipo">Tipo de Espetáculo</label>
-                        <input id="edit-tipo" type="text" name="tipo" bind:value={eventoParaEditar.tipo_espectaculo} placeholder="Cinema, Teatro..." />
+                        <input id="edit-tipo" type="text" name="tipo" bind:value={eventoParaEditar.tipo_espectaculo} required placeholder="Cinema, Teatro..." />
                     </div>
                     
                     <div class="sessions-editor-box">
@@ -186,6 +236,68 @@
     }
     .btn-add-event:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(255, 0, 0, 0.4); }
     
+    .filter-wrapper {
+        max-width: 1200px;
+        margin: 0 auto 40px auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+    }
+
+    .filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .filter-bar label {
+        color: white;
+        font-weight: bold;
+        font-size: 0.9em;
+        letter-spacing: 1px;
+    }
+
+    .filter-bar select {
+        background: var(--background-dark);
+        color: var(--text-muted);
+        border: 2px solid var(--secondary-color);
+        padding: 10px 22px;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        outline: none;
+    }
+
+    .search-bar {
+        position: relative;
+    }
+
+    .search-bar input {
+        background: #1a1a2e;
+        color: white;
+        border: 2px solid #ff0000;
+        padding: 10px 40px 10px 15px;
+        border-radius: 8px;
+        outline: none;
+        font-weight: bold;
+        width: 250px;
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 54%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+
+    .search-icon svg {
+        fill: #ffffff;
+        opacity: 0.8;
+    }
+
     .cards-grid { 
         display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
         gap: 40px; max-width: 1200px; margin: 0 auto; 
@@ -240,14 +352,17 @@
         transform: rotate(90deg);
     }
     
-    
     .form-layout { display: flex; gap: 40px; }
+    
     .image-column { flex: 0 0 260px; }
+
     .image-upload-modal { 
         width: 100%; height: 350px; border: 2px dashed var(--secondary-color);
         display: flex; align-items: center; justify-content: center; position: relative; border-radius: 10px;
     }
+
     .preview-img { width: 100%; height: 100%; object-fit: contain; }
+    
     .file-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
     .sessions-editor-box {
@@ -260,7 +375,9 @@
     .sessions-header { 
         display: flex; 
         justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .add-sess-btn {  background: none;
+    
+    .add-sess-btn {  
+        background: none;
         border: 1px solid var(--accent);
         color: var(--accent);
         padding: 4px 10px;
@@ -269,6 +386,7 @@
     }
 
     .sessions-list { max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+
     .session-row { 
     display: grid; 
     grid-template-columns: 1.5fr 1.5fr 1fr 1fr 0.8fr auto; 

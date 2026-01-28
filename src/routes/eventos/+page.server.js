@@ -4,9 +4,40 @@ import { query } from '$lib/db';
 /** @type {import('./$types').PageServerLoad} */
 export async function load() {
     try {
-        // Carrega a lista completa de eventos
-        const lista = await query('SELECT * FROM Eventos ORDER BY id_eventos DESC');
-        // Carrega os tipos de espetáculos distintos
+        // 1️⃣ Buscar eventos
+        const eventos = await query(`SELECT * FROM Eventos`);
+
+        // 2️⃣ Buscar sessões com nome da sala
+        const sessoes = await query(`
+            SELECT 
+                es.id_eventos,
+                es.data_espectaculo,
+                es.hora_inicio,
+                es.duracao,
+                es.limite_bilhetes,
+                s.nome_sala
+            FROM Eventos_Sala es
+            JOIN Sala s ON es.id_sala = s.id_sala
+        `);
+
+        // 3️⃣ Agrupar sessões dentro dos eventos
+        const mapa = {};
+        for (const ev of eventos) {
+            mapa[ev.id_eventos] = {
+                ...ev,
+                sessoes: []
+            };
+        }
+
+        for (const s of sessoes) {
+            if (mapa[s.id_eventos]) {
+                mapa[s.id_eventos].sessoes.push(s);
+            }
+        }
+
+        const listaFinal = Object.values(mapa);
+
+        // 4️⃣ Tipos distintos (categorias)
         const tiposBD = await query(`
             SELECT DISTINCT tipo_espectaculo 
             FROM Eventos 
@@ -14,13 +45,14 @@ export async function load() {
             AND tipo_espectaculo != ''
             ORDER BY tipo_espectaculo ASC
         `);
-        
+
         const tipos = tiposBD.map(t => t.tipo_espectaculo);
 
         return {
-            eventos: JSON.parse(JSON.stringify(lista)),
-            tipos: tipos 
+            eventos: JSON.parse(JSON.stringify(listaFinal)),
+            tipos
         };
+
     } catch (error) {
         console.error("Erro ao carregar eventos:", error);
         return { eventos: [], tipos: [] };

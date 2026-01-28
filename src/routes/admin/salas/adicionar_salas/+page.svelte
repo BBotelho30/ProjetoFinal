@@ -49,19 +49,24 @@
     }
 </script>
 
-<main class="admin-container">
-    {#if showSuccess}
-        <div class="popup-success">
-            <div class="popup-content">
-                <span class="icon">✅</span>
-                <p>Sala adicionada com sucesso!</p>
-            </div>
-        </div>
-    {/if}
+<main class="hero-section">
+    <div class="form-container">
 
-    <div class="form-card">
+        <button type="button" class="close-btn" on:click={() => goto('/admin/salas')}>
+            &times;
+        </button>
+
+        {#if showSuccess}
+            <div class="popup-success">
+                <div class="popup-content">
+                    <span class="icon">✅</span>
+                    <p>Sala adicionada com sucesso!</p>
+                </div>
+            </div>
+        {/if}
+
         <h1>Criar Nova Sala</h1>
-        
+
         {#if form?.message}
             <div class="error-msg">{form.message}</div>
         {/if}
@@ -90,9 +95,9 @@
 
             <input type="hidden" name="svg_code" value={svgCode} />
 
-          
-
-            <button type="submit" class="btn-save" disabled={!svgCode || !nome}>Criar Sala</button>
+            <button type="submit" class="btn-save" disabled={!svgCode || !nome}>
+                Criar Sala
+            </button>
         </form>
 
         {#if previewHtml}
@@ -103,65 +108,141 @@
                 </div>
             </div>
         {/if}
+
     </div>
 </main>
 
 <style>
-    .admin-container { 
-        min-height: 100vh; 
-        background: #0f172a; 
-        padding: 40px 20px; 
-        font-family: sans-serif;
+    :root {
+        --bg: #1a1a2e;
+        --primary: #0f3460;
+        --accent: #ff0000;
+        --text: #e0e0e0;
     }
 
-    .form-card { 
-        background: #1e293b; 
-        padding: 2.5rem; 
-        border-radius: 12px; 
-        color: white; 
-        max-width: 800px; 
-        margin: 0 auto; 
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+    .hero-section {
+        min-height: 100vh;
+        background: radial-gradient(circle at top, var(--primary), var(--bg));
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
     }
 
-    h1 { margin-bottom: 2rem; font-size: 1.8rem; text-align: center; color: #f8fafc; }
-
-    .input-group { margin-bottom: 1.8rem; display: flex; flex-direction: column; gap: 8px; }
-
-    label { font-weight: 600; color: #cbd5e1; font-size: 0.95rem; }
-
-    textarea, input { 
-        background: #0f172a; border: 1px solid #334155; color: white; 
-        padding: 12px; border-radius: 8px; font-size: 1rem; 
+    .form-container {
+        background: rgba(22, 22, 45, 0.95);
+        padding: 40px;
+        border-radius: 15px;
+        width: 100%;
+        max-width: 900px;
+        border: 1px solid #3f3f5f;
+        position: relative;
     }
 
-    /* Estilo do Upload */
-    .hidden-input { display: none; }
-    .file-upload-wrapper { cursor: pointer; }
-    .file-custom-btn { 
-        background: #1e293b; border: 2px dashed #475569; padding: 20px; border-radius: 8px; 
-        text-align: center; transition: all 0.2s ease; display: flex; flex-direction: column; 
-        align-items: center; gap: 10px; color: #94a3b8; 
+    .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 3em;
+        cursor: pointer;
+        z-index: 10;
+        transition: 0.3s ease;
     }
-    .file-custom-btn:hover { border-color: #3b82f6; background: #0f172a; color: #f8fafc; }
-    .upload-icon { font-size: 1.5rem; }
 
-    .btn-save { 
-        background: #10b981; color: white; border: none; padding: 16px; 
-        border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; 
-        font-size: 1.1rem; margin-top: 10px;
+    .close-btn:hover {
+        color: #ff0000;
+        transform: rotate(90deg);
     }
-    .btn-save:disabled { background: #475569; cursor: not-allowed; }
 
-    .preview-section { margin-top: 2.5rem; background: white; padding: 25px; border-radius: 12px; color: #1e293b; }
-    .svg-render :global(svg) { max-width: 100%; height: auto; }
-
-    .error-msg { background: #f87171; color: white; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-
-    .popup-success { 
-        position: fixed; top: 20px; right: 20px; background: #10b981; color: white; 
-        padding: 15px 25px; border-radius: 10px; z-index: 1000; animation: slideIn 0.3s ease-out; 
+    h1 {
+        text-align: center;
+        margin-bottom: 30px;
+        color: white;
     }
-    .popup-content { display: flex; align-items: center; gap: 10px; font-weight: bold; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 15px;
+    }
+
+    label {
+        color: #cbd5e1;
+        font-weight: 600;
+    }
+
+    input, textarea {
+        background: #111126;
+        border: 1px solid #3f3f5f;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+    }
+
+    .hidden-input {
+        display: none;
+    }
+
+    .file-custom-btn {
+        background: rgba(0,0,0,0.3);
+        border: 2px dashed var(--accent);
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+        color: #ccc;
+        transition: 0.2s;
+    }
+
+    .file-custom-btn:hover {
+        background: rgba(0,0,0,0.5);
+    }
+
+    .upload-icon {
+        font-size: 2em;
+        color: var(--accent);
+    }
+
+    .btn-save {
+        width: 100%;
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 15px;
+        font-weight: bold;
+        font-size: 1.2em;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 20px;
+    }
+
+    .btn-save:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .preview-section {
+        margin-top: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        color: #1a1f3a;
+    }
+
+    /* Corrigir estilo do autofill do Chrome */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    textarea:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+        box-shadow: 0 0 0px 1000px #0f172a inset !important;
+        -webkit-text-fill-color: white !important;
+        caret-color: white;
+        border: 1px solid #334155;
+    }
+
 </style>

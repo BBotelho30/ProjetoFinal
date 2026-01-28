@@ -20,7 +20,7 @@
             <li><a href="/minhas-reservas">As Minhas Reservas</a></li>
             
             {#if $user}
-                <li class="user-greeting">Bem-vindo, <span>{$user?.nome || 'Utilizador'}</span></li>
+                <li class="user-greeting">Olá, <span>{$user?.nome || 'Utilizador'}</span></li>
                 <li><button class="logout-btn" on:click={() => { user.set(null); goto('/'); }}>Sair</button></li>
             {/if}
         </ul>

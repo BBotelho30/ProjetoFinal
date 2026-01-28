@@ -6,18 +6,45 @@
     export let data;
     
     $: eventos = data?.eventos || [];
-    $: tiposExistentes = data?.tipos || [];
-
+    $: tiposExistentes = [...new Set((data?.tipos || []).map(t => t.toLowerCase()))];
+    
     let filtroTipo = "Todos";
     let pesquisa = ""; 
+    let filtroSala = "Todas";
+    let filtroData = "";
 
-    // Lógica reativa: sempre que filtroTipo mudar, a lista atualiza-se
+    $: salasExistentes = [
+        ...new Set(
+            eventos.flatMap(e => e.sessoes?.map(s => s.nome_sala) || [])
+        )
+    ];
+
     $: eventosFiltrados = eventos.filter(e => {
-        const correspondeTipo = filtroTipo === "Todos" || e.tipo_espectaculo === filtroTipo;
-        const correspondeNome = e.nome_evento.toLowerCase().includes(pesquisa.toLowerCase());
-        
-        return correspondeTipo && correspondeNome;
+        const correspondeTipo =
+            filtroTipo === "Todos" ||
+            e.tipo_espectaculo?.toLowerCase() === filtroTipo.toLowerCase();
+
+        const correspondeNome =
+            e.nome_evento.toLowerCase().includes(pesquisa.toLowerCase());
+
+        const correspondeSala =
+            filtroSala === "Todas" ||
+            e.sessoes?.some(s => s.nome_sala === filtroSala);
+
+        const correspondeData =
+            !filtroData ||
+            e.sessoes?.some(s => s.data_espectaculo?.startsWith(filtroData));
+
+        return (
+            correspondeTipo &&
+            correspondeNome &&
+            correspondeSala &&
+            correspondeData
+        );
     });
+    
+
+    const formatarTexto = (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
 
     function comprar(id) {
         // Redireciona para a página de detalhes/calendário do evento
@@ -33,13 +60,28 @@
 
     <div class="filter-wrapper">
         <div class="filter-bar">
-            <label for="tipo">FILTRAR POR:</label>
             <select id="tipo" bind:value={filtroTipo}>
-                <option value="Todos">TODOS OS TIPOS</option>
+                <option value="Todos">Todas as Categorias</option>
                 {#each tiposExistentes as tipo}
-                    <option value={tipo}>{tipo.toUpperCase()}</option>
+                    <option value={tipo}>{formatarTexto(tipo)}</option>
                 {/each}
             </select>
+            <select bind:value={filtroSala}>
+                <option value="Todas">Todas as salas</option>
+                {#each salasExistentes as sala}
+                    <option value={sala}>{sala}</option>
+                {/each}
+            </select>
+            
+            <div class="date-picker-wrapper">
+                <input id="filtro-data" type="date" bind:value={filtroData} class="date-input" />
+                <button type="button" class="date-icon-btn" on:click={() => document.getElementById('filtro-data').showPicker?.()} aria-label="Escolher data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                        <path fill="currentColor" d="M7 2v2H5a2 2 0 0 0-2 2v2h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm14 8H3v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10zm-11 3h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 0h2v2H6v-2z"/>
+                    </svg>
+                </button>
+            </div>
+
         </div>
 
         <div class="search-bar">
@@ -66,8 +108,15 @@
                     <h3>{evento.nome_evento}</h3>
                     <p>{evento.descricao?.slice(0, 100) || 'Sem descrição disponível.'}</p>
                     <div class="card-actions">
-                        <button class="buy-btn" on:click={() => goto(`/eventos/detalhes_pagina/${evento.id_eventos}`)}>
-                             Comprar Bilhete
+                        <button 
+                            class="buy-btn" on:click={() => {
+                                if (!$user) {
+                                    goto('/autenticacao/login');
+                                } else {
+                                    goto(`/eventos/detalhes_pagina/${evento.id_eventos}`);
+                                }
+                            }}
+                            >Comprar Bilhete
                         </button>
                     </div>
                 </div>
@@ -129,14 +178,15 @@
         background: var(--background-dark);
         color: var(--text-muted);
         border: 2px solid var(--secondary-color);
-        padding: 10px 22px;
+        padding: 10px 4px 10px 2px;  /* 🔥 mais espaço à direita */
         border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
         outline: none;
         transition: 0.3s;
+        height: 44px;
     }
-
+    
     .filter-wrapper {
         max-width: 1200px;
         margin: 0 auto 40px auto;
@@ -178,6 +228,50 @@
         opacity: 0.8;  /* Opcional: dá um toque mais suave */
         transition: all 0.3s ease;
     }
+
+    .date-picker-wrapper {
+        position: relative;
+    }
+
+    .date-input {
+        background: #1a1a2e;
+        color: #888;
+        border: 2px solid #ff0000;
+        padding: 10px 40px 10px 15px;
+        border-radius: 8px;
+        outline: none;
+        font-weight: bold;
+        height: 44px;
+        min-width: 160px;
+        box-sizing: border-box;
+        cursor: pointer;
+    }
+
+    /* Ícone */
+    .date-icon-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: white;
+        opacity: 0.8;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    /* Ícone do browser */
+    .date-input::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0;
+        cursor: pointer;
+    }
+
 
     .cards-grid {
         display: grid;

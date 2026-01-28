@@ -32,7 +32,7 @@
 	<div class="logo">QuickSeat</div>
 	<nav class="nav">
 		<ul>
-			<li><a href="/">Início</a></li>
+			<li><a href={$user ? "/dashboard" : "/"}>Início</a></li>
 			<li><a href="/eventos">Eventos</a></li>
 			{#if $user}
 			<li><a href="/minhas-reservas">As Minhas Reservas</a></li>

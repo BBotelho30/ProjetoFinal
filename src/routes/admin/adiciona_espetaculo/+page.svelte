@@ -67,7 +67,7 @@ $: if (form?.message) {
                     {#if nomeFicheiro}
                         <p class="file-name">{nomeFicheiro}</p>
                     {:else if !data?.evento?.imagem_cartaz}
-                        <p>CARTAZ</p>
+                        <p>ADICIONAR CARTAZ</p>
                         <span class="plus-icon">+</span>
                     {/if}
                     <input type="file" name="imagem_ficheiro" accept="image/*" required={!data?.evento} class="file-input" on:change={mostrarNome} />
@@ -87,7 +87,7 @@ $: if (form?.message) {
 
                 <div class="input-group">
                     <label for="tipo">Tipo</label>
-                    <input type="text" id="tipo" name="tipo" placeholder="Cinema, Teatro" value={data?.evento?.tipo_espectaculo || ''} />
+                    <input type="text" id="tipo" name="tipo" placeholder="Cinema, Teatro" value={data?.evento?.tipo_espectaculo || ''} required />
                 </div>
 
                 <div class="sessions-section">
