@@ -15,6 +15,7 @@
         parseISO 
     } from 'date-fns';
     import { pt } from 'date-fns/locale'; // Para meses em português
+    import { user } from '$lib/userStore';
 
     export let data;
     const { evento, sessoes } = data;
@@ -66,13 +67,18 @@
         return sessoes.filter(s => isSameDay(parseISO(s.data_espectaculo), dataAlvo));
     }
 
-    function irParaCompra(sessao) {
-        goto(`/salas_compra/${sessao.id_sala}?evento=${sessao.id_eventos}`);
-    }
-
     function proximoMes() { dataReferencia = addMonths(dataReferencia, 1); diaSelecionado = null; }
     function mesAnterior() { dataReferencia = subMonths(dataReferencia, 1); diaSelecionado = null; }
     function voltar() { window.history.back(); }
+
+    function irParaCompra(sessao) {
+        if (!$user) {
+            goto('/autenticacao/login');
+        } else {
+            goto(`/salas_compra/${sessao.id_sala}?evento=${sessao.id_eventos}`);
+        }
+    }
+
 
     const diasSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 

@@ -7,10 +7,19 @@
 
     export let data;
     $: eventos = data?.eventos || [];
-    $: tiposExistentes = [...new Set((eventos || []).map(e => e.tipo_espectaculo?.toLowerCase()).filter(Boolean))];
+    $: salas = data?.salas || [];
 
     let filtroTipo = "Todos";
+    let filtroSala = "Todas";
+    let filtroData = "";
     let pesquisa = "";
+
+
+    $: tiposExistentes = [...new Set(
+        eventos.map(e => e.tipo_espectaculo?.toLowerCase()).filter(Boolean)
+    )];
+
+    $: salasExistentes = salas.map(s => s.nome_sala);
 
     $: eventosFiltrados = eventos.filter(e => {
         const correspondeTipo =
@@ -20,8 +29,22 @@
         const correspondeNome =
             e.nome_evento.toLowerCase().includes(pesquisa.toLowerCase());
 
-        return correspondeTipo && correspondeNome;
+        const correspondeSala =
+            filtroSala === "Todas" ||
+            e.sessoes?.some(s => s.nome_sala === filtroSala);
+
+        const correspondeData =
+            !filtroData ||
+            e.sessoes?.some(s => s.data_espectaculo?.startsWith(filtroData));
+
+        return (
+            correspondeTipo &&
+            correspondeNome &&
+            correspondeSala &&
+            correspondeData
+        );
     });
+
 
     const formatarTexto = (txt) =>
         txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
@@ -90,13 +113,29 @@
         
     <div class="filter-wrapper">
         <div class="filter-bar">
-            <label for="tipo">FILTRAR POR:</label>
             <select id="tipo" bind:value={filtroTipo}>
                 <option value="Todos">Todos os tipos</option>
                 {#each tiposExistentes as tipo}
                     <option value={tipo}>{formatarTexto(tipo)}</option>
                 {/each}
             </select>
+            <select bind:value={filtroSala}>
+                <option value="Todas">Todas as salas</option>
+                {#each salasExistentes as sala}
+                    <option value={sala}>{sala}</option>
+                {/each}
+            </select>
+
+            <div class="date-picker-wrapper">
+                <input id="filtro-data" type="date" bind:value={filtroData} class="date-input" />
+                <button type="button" class="date-icon-btn" on:click={() => document.getElementById('filtro-data').showPicker?.()} aria-label="Escolher data">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
+                        <path fill="currentColor" d="M7 2v2H5a2 2 0 0 0-2 2v2h18V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm14 8H3v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V10zm-11 3h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 0h2v2H6v-2z"/>
+                    </svg>
+                </button>
+            </div>
+
+
         </div>
 
         <div class="search-bar">
@@ -253,6 +292,7 @@
     }
 
     .filter-bar label {
+        margin-left: 10px;
         color: white;
         font-weight: bold;
         font-size: 0.9em;
@@ -263,11 +303,13 @@
         background: var(--background-dark);
         color: var(--text-muted);
         border: 2px solid var(--secondary-color);
-        padding: 10px 22px;
+        padding: 10px 4px 10px 2px; 
         border-radius: 8px;
         font-weight: bold;
         cursor: pointer;
         outline: none;
+        transition: 0.3s;
+        height: 44px;
     }
 
     .search-bar {
@@ -283,6 +325,7 @@
         outline: none;
         font-weight: bold;
         width: 250px;
+        transition: width 0.3s ease, box-shadow 0.3s ease;
     }
 
     .search-icon {
@@ -291,11 +334,55 @@
         top: 54%;
         transform: translateY(-50%);
         pointer-events: none;
+        font-size: 0.9em;
     }
 
     .search-icon svg {
         fill: #ffffff;
         opacity: 0.8;
+    }
+
+    .date-picker-wrapper {
+        position: relative;
+    }
+
+    .date-input {
+        background: #1a1a2e;
+        color: #888;
+        border: 2px solid #ff0000;
+        padding: 10px 40px 10px 15px;
+        border-radius: 8px;
+        outline: none;
+        font-weight: bold;
+        height: 44px;
+        min-width: 160px;
+        box-sizing: border-box;
+        cursor: pointer;
+    }
+
+    /* Ícone */
+    .date-icon-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: white;
+        opacity: 0.8;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+
+    /* Ícone do browser */
+    .date-input::-webkit-calendar-picker-indicator {
+        filter: invert(1);
+        opacity: 0;
+        cursor: pointer;
     }
 
     .cards-grid { 

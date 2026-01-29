@@ -47,9 +47,9 @@
     const formatarTexto = (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
 
     function comprar(id) {
-        // Redireciona para a página de detalhes/calendário do evento
-        goto(`/eventos/${id}`);
-    }
+    goto(`/eventos/detalhes_pagina/${id}`);
+}
+
 </script>
 
 <main class="events-page">
@@ -108,16 +108,10 @@
                     <h3>{evento.nome_evento}</h3>
                     <p>{evento.descricao?.slice(0, 100) || 'Sem descrição disponível.'}</p>
                     <div class="card-actions">
-                        <button 
-                            class="buy-btn" on:click={() => {
-                                if (!$user) {
-                                    goto('/autenticacao/login');
-                                } else {
-                                    goto(`/eventos/detalhes_pagina/${evento.id_eventos}`);
-                                }
-                            }}
-                            >Comprar Bilhete
+                        <button class="buy-btn" on:click={() => comprar(evento.id_eventos)}>
+                            Comprar Bilhete
                         </button>
+
                     </div>
                 </div>
             </div>
