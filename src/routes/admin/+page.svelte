@@ -5,14 +5,14 @@
 
 <main class="admin-dashboard">
     <div class="welcome-text">
-        <h1>Olá, Admin!</h1>
+        <h1>Olá, Administrador!</h1>
         <p>O que deseja fazer hoje?</p>
     </div>
 
     <div class="cards-container">
         <button class="admin-card" on:click={() => goto('/admin/salas')}>
             <div class="icon">🏢</div>
-            <h2>Adicionar Sala de Espetáculo</h2>
+            <h2>Gestão de Salas de Espetáculo</h2>
             <div class="plus-sign">+</div>
         </button>
 

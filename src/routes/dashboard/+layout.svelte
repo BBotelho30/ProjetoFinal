@@ -11,21 +11,7 @@
     });
 </script>
 
-<header class="header">
-    <div class="logo">QuickSeat</div>
-    <nav class="nav">
-        <ul>
-            <li><a href="/dashboard">Início</a></li>
-            <li><a href="/eventos">Eventos</a></li>
-            <li><a href="/minhas-reservas">As Minhas Reservas</a></li>
-            
-            {#if $user}
-                <li class="user-greeting">Olá, <span>{$user?.nome || 'Utilizador'}</span></li>
-                <li><button class="logout-btn" on:click={() => { user.set(null); goto('/'); }}>Sair</button></li>
-            {/if}
-        </ul>
-    </nav>
-</header>
+
 
 <slot />
 

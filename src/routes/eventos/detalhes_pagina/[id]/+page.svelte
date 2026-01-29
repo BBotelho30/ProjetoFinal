@@ -166,7 +166,7 @@
                 </div>
             {:else}
                 <div class="sessoes-vazio sessoes-container">
-                    <p>ESCOLHA UMA DATA MARCADA NO CALENDÁRIO</p>
+                    <p>Escolha uma data marcada a verde no calendário.</p>
                 </div>
             {/if}
         </div>

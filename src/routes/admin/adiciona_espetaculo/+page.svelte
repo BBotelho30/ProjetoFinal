@@ -152,13 +152,13 @@ $: if (form?.message) {
 }
 
 .hero-section {
-    min-height: 100vh;
-    background: radial-gradient(circle at top, var(--primary), var(--bg));
+    min-height: calc(100vh - 80px); /* altura do header */
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 20px;
+    align-items: flex-start;
+    padding-top: 110px; /* ajusta aqui o espaço */
 }
+
 
 .form-container {
     background: rgba(22, 22, 45, 0.95);

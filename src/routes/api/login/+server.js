@@ -7,8 +7,6 @@ export async function POST({ request }) {
     try {
         const { email, password } = await request.json();
 
-        // Usa-se o  SELECT * para garantir que vem todas as colunas (incluindo o 'tipo')
-        // Certifica que a tabela se chama 'Utilizadores' no MySQL
         const sql = `SELECT * FROM Utilizadores WHERE email = ? AND password = ?`;
         
         const users = await query(sql, [email, password]);

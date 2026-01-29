@@ -15,11 +15,8 @@
 	// Esconder header em páginas específicas
 	let hideHeader = $derived(
 		$page.url.pathname.startsWith('/admin') || 
-		$page.url.pathname.startsWith('/dashboard') ||
 		$page.url.pathname === '/autenticacao/login' ||
-		$page.url.pathname === '/autenticacao/registo' ||
-		$page.url.pathname === '/(auth)/login' ||
-		$page.url.pathname === '/(auth)/registo'
+		$page.url.pathname === '/autenticacao/registo'
 	);
 </script>
 
@@ -36,8 +33,19 @@
 			<li><a href="/eventos">Eventos</a></li>
 			{#if $user}
 			<li><a href="/minhas-reservas">As Minhas Reservas</a></li>
-				<li class="user-greeting">Olá, <span>{$user.nome}</span></li>
-			<li><button class="logout-btn" onclick={logout}>Sair</button></li>
+			<li class="user-menu">
+				<button class="user-button" on:click={() => goto('/conta')}>
+					<div class="avatar">
+						{#if $user.foto}
+							<img src={$user.foto} alt="Foto de perfil" />
+						{:else}
+							<span>{ $user.nome.charAt(0).toUpperCase() }</span>
+						{/if}
+					</div>
+					<span class="user-name">{$user.nome}</span>
+				</button>
+			</li>
+			<li><button class="logout-btn" on:click={logout}>Sair</button></li>
 			{:else}
 			<li><a href="/autenticacao/login">Login</a></li>
 			<li><a href="/autenticacao/registo">Registo</a></li>
@@ -98,16 +106,6 @@
 	color: #ff0000;
 }
 
-.user-greeting {
-	color: #e0e0e0;
-	font-size: 1.1em;
-}
-
-.user-greeting span {
-	color: #ff0000;
-	font-weight: bold;
-}
-
 .logout-btn {
 	background: none;
 	border: 2px solid #ff0000;
@@ -123,4 +121,51 @@
 	background: #ff0000;
 	color: #1a1a2e;
 }
+
+.user-menu {
+    display: flex;
+    align-items: center;
+}
+
+.user-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 1.05em;
+    padding: 6px 10px;
+    border-radius: 30px;
+    transition: background 0.3s;
+}
+
+.user-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ff0000;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-name {
+    font-weight: 500;
+}
+
 </style>
