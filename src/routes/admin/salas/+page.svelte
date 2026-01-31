@@ -34,40 +34,40 @@
         lugares = sala?.lugares_guardados || [];
         
         if (sala?.config_zonas) {
-            configZonas = typeof sala.config_zonas === 'string' ? JSON.parse(sala.config_zonas) : sala.config_zonas;
-        } else {
-            configZonas = {};
-        }
+        // Garantimos que o JSON é transformado em objeto JS
+        configZonas = typeof sala.config_zonas === 'string' 
+            ? JSON.parse(sala.config_zonas) 
+            : sala.config_zonas;
+    } else {
+        configZonas = {};
+    }
     }
 
-    function selecionarZona(event) {
-        const target = event.target.closest('path, polygon, rect');
-        if (!target) return;
+function selecionarZona(event) {
+    const target = event.target.closest('path, polygon, rect');
+    if (!target) return;
 
-        const bbox = target.getBBox();
-        // Gerar ID estável baseado na geometria se o SVG não tiver IDs
-        const generatedId = target.id || `z-${Math.round(bbox.x)}-${Math.round(bbox.y)}`;
-        
-        // Tentar recuperar nome guardado, senão usa o padrão do SVG
-        let nomeExistente = target.getAttribute('data-name') || target.id || 'Nova Zona';
-        if (configZonas[generatedId]?.nome) {
-            nomeExistente = configZonas[generatedId].nome;
-        }
-
-        zonaAtiva = {
-            id: generatedId,
-            nome: nomeExistente
-        };
-
-        // Carregar configurações técnicas se existirem
-        if (configZonas[generatedId]) {
-            config = { ...configZonas[generatedId] };
-        } else {
-            config = { filas: 10, cols: 15, espacamento: 35, letraInicial: 'A', numInicial: 1 };
-        }
-
-        modalAberto = true;
+    const bbox = target.getBBox();
+    const generatedId = target.id || `z-${Math.round(bbox.x)}-${Math.round(bbox.y)}`;
+    
+    // Tenta recuperar o nome que guardaste na BD anteriormente
+    let nomeExistente = target.getAttribute('data-name') || target.id || 'Nova Zona';
+    if (configZonas[generatedId]?.nome) {
+        nomeExistente = configZonas[generatedId].nome;
     }
+
+    zonaAtiva = { id: generatedId, nome: nomeExistente };
+
+    // Se a zona já tinha sido configurada, o modal abre com os números certos (filas/cols)
+    if (configZonas[generatedId]) {
+        config = { ...configZonas[generatedId] };
+    } else {
+        // Se for uma zona nunca antes tocada, usa o padrão
+        config = { filas: 10, cols: 15, espacamento: 35, letraInicial: 'A', numInicial: 1 };
+    }
+
+    modalAberto = true;
+}
 
     function gerarGrelhaNoBlueprint() {
         const novos = [];
@@ -142,12 +142,13 @@
                     <p>Zonas Mapeadas: <strong>{Object.keys(configZonas).length}</strong></p>
                     <p>Cadeiras Ativas: <strong>{lugares.filter(l => l.visivel).length}</strong></p>
                 </div>
-                <form method="POST" action="?/guardarLugares" use:enhance>
-                    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
-                    <input type="hidden" name="config_zonas" value={JSON.stringify(configZonas)} />
-                    <input type="hidden" name="sala" value={salaSelecionada} />
-                    <button type="submit" class="btn-save-all">💾 PUBLICAR MAPA FINAL</button>
-                </form>
+        <form method="POST" action="?/guardarLugares"> 
+    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
+    <input type="hidden" name="config_zonas" value={JSON.stringify(configZonas)} />
+    <input type="hidden" name="sala" value={salaSelecionada} />
+    
+    <button type="submit" class="btn-save-all">💾 PUBLICAR MAPA FINAL</button>
+</form>
                 <button class="btn-clear" onclick={() => { if(confirm('Limpar tudo?')) lugares = [] }}>Limpar Desenho</button>
             </div>
         {/if}

@@ -49,7 +49,6 @@
     const formatarTexto = (txt) =>
         txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
 
-    $: salas = data?.salas || [];
 
     let showModal = false;
     let eventoParaEditar = { sessoes: [] };
