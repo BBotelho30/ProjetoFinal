@@ -21,6 +21,12 @@
             <h2>Adicionar Espetáculo</h2>
             <div class="plus-sign">+</div>
         </button>
+
+        <button class="admin-card" on:click={() => goto('/admin/salas/adicionar_salas')}>
+            <div class="icon">🎟️</div>
+            <h2>Adicionar Sala de Espetáculo</h2>
+            <div class="plus-sign">+</div>
+        </button>
         
         <div class="admin-card disabled">
             <div class="icon">📊</div>
@@ -74,12 +80,12 @@
         border: none;
         border-radius: 20px;
         width: 280px;
-        height: 350px;
+        height: 400px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: space-between;
-        padding: 40px 20px;
+        padding: 80px 20px;
         cursor: pointer;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -87,7 +93,7 @@
 
     .admin-card:hover {
         transform: translateY(-10px);
-        box-shadow: 0 15px 30px rgba(255, 0, 0, 0.4);
+        box-shadow: 0 15px 30px var(--primary-color);
     }
 
     .admin-card h2 { 
@@ -105,7 +111,8 @@
         font-size: 4em; 
         color: #ddd; 
         line-height: 1; 
-        font-weight: 200; }
+        font-weight: 200; 
+    }
 
     /* Cartão Desativado */
     .admin-card.disabled {

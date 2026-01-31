@@ -95,22 +95,25 @@
         <button type="button" class="close-btn" on:click={voltar}>&times;</button>
         
         <section class="event-header">
-        <div class="poster-box">
-            <img src={evento.imagem_cartaz || '/placeholder.jpg'} alt={evento.nome_evento} />
-        </div>
-        
-        <div class="main-details">
-            <span class="category-tag">{evento.tipo_espectaculo || 'ESPETÁCULO'}</span>
-            <h1>{evento.nome_evento}</h1>
-            
-            <div class="meta-info">
-                <p><strong>Classificação:</strong> M/06 anos</p>
-                <p><strong>Duração:</strong> {sessoes[0]?.duracao || '--'} min. s/ intervalo</p>
-                <p><strong>Descrição:</strong></p>
-                <p class="description-text">{evento.descricao || 'Sem descrição disponível.'}</p>
+            <div class="poster-box">
+                <img src={evento.imagem_cartaz || '/placeholder.jpg'} alt={evento.nome_evento} />
             </div>
-        </div>
-    </section>
+            
+            <div class="main-details">
+                <h1>{evento.nome_evento}</h1>
+
+                <div class="tag-wrapper">
+                    <span class="category-tag">
+                        {evento.tipo_espectaculo || 'ESPETÁCULO'}
+                    </span>
+                </div>
+
+                <div class="meta-info">
+                    <p><strong>Classificação:</strong> M/06 anos</p>
+                    <p><strong>Duração:</strong> {sessoes[0]?.duracao || '--'} min. s/ intervalo</p>
+                </div>
+            </div>  
+        </section>
 
     <!-- CALENDÁRIO E SESSÕES LADO A LADO -->
     <div class="calendar-wrapper">
@@ -179,8 +182,25 @@
                 </div>
             {/if}
         </div>
+        
+        <section class="descricao-section">
+            <h2>Descrição</h2>
+            <p class="descricao-text">
+                {evento.descricao || 'Sem descrição disponível.'}
+            </p>
+        </section>
+
+        <section class="multimedia-section">
+            <h2>Multimédia</h2>
+            <p class="multimedia-text">
+                {evento.multimedia || 'Sem multimédia disponível.'}
+            </p>
+        </section>
     </div>
 </main>
+
+
+
 
 <style>
     :root {
@@ -230,15 +250,6 @@
         transform: rotate(90deg);
     }
 
-    .page-container {
-        max-width: 100%;
-        margin: 0;
-        padding: 0;
-        font-family: 'Inter', sans-serif;
-        color: #e0e0e0;
-        background: transparent;
-    }
-
     .event-header { 
         display: flex; 
         gap: 40px; 
@@ -250,26 +261,32 @@
         border-radius: 4px; 
         box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
     }
+
+    .tag-wrapper {
+        margin: 17px 0 10px 0;
+    }
     
     .category-tag { 
-        background: #ff0000; 
-        padding: 4px 12px; 
-        font-size: 0.9em; 
+        display: inline-block;
+        background: #ff0000;
+        padding: 5px 13px;
+        font-size: 0.85em;
         font-weight: bold;
         color: #1a1a1a;
-        border-radius: 5px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
     .main-details {
         flex: 1;
     }
 
-    .main-details h1 { 
-        font-size: 2.8em; 
-        margin: 15px 0; 
-        font-weight: 800; 
-        line-height: 1.1; 
-        color: #fff; 
+    .main-details h1 {
+        font-size: 2.7em;
+        margin: 0 10px 10px 0;
+        color: white;
+        letter-spacing: 1px;
     }
 
     .meta-info p { 
@@ -278,21 +295,52 @@
         font-size: 1.1em; 
     }
 
-    .description-text {
-        margin: 8px 0 !important;
-        color: #b0b0b0;
-        font-size: 0.95em !important;
-        line-height: 1.5;
-        white-space: pre-line;
+    /* descrição do evento */
+    .descricao-section {
+        margin-top: 60px;
+        padding-top: 10px;
+        border-top: 2px solid rgba(255, 255, 255, 0.15);
     }
 
-    .section-title {
+    .descricao-section h2 {
         font-size: 1.8em;
-        border-bottom: 2px solid #1a1a1a;
-        padding-bottom: 10px;
-        margin-bottom: 30px;
-        font-weight: 700;
+        margin-bottom: 10px;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
+
+    .descricao-text {
+        font-size: 1.1em;
+        line-height: 1.8;
+        color: #cbd5e1;
+        white-space: pre-line;
+        max-width: 100%;
+    }
+
+    /*multimédia*/
+    .multimedia-section {
+        margin-top: 60px;
+        padding-top: 10px;
+        border-top: 2px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .multimedia-section h2 {
+        font-size: 1.8em;
+        margin-bottom: 10px;
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .multimedia-text {
+        font-size: 1.1em;
+        line-height: 1.8;
+        color: #cbd5e1;
+        white-space: pre-line;
+        max-width: 100%;
+    }
+
 
     .session-item {
         display: flex;
@@ -346,9 +394,9 @@
     }
 
     .venue-info {
-        flex: 1; /* Faz este bloco ocupar todo o espaço disponível no meio */
+        flex: 1; 
         display: flex;
-        align-items: center; /* Centraliza o texto verticalmente */
+        align-items: center;
         padding-left: 10px;
     }
 
@@ -387,16 +435,6 @@
         text-align: center;
     }
 
-    .description-area .content { 
-        line-height: 1.7; 
-        font-size: 1.1em; 
-        white-space: pre-line; 
-    }
-
-    .empty-msg { 
-        color: #888; 
-        font-style: italic; 
-    }
 
     .calendar-wrapper {
         display: flex;
