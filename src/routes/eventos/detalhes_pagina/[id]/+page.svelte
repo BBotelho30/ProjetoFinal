@@ -143,7 +143,7 @@
 
             {#if diaSelecionado}
                 <div class="sessoes-selecionadas sessoes-container">
-                    <h3>Sessões em {format(diaSelecionado, "dd 'de' MMMM", { locale: pt })}</h3>
+                    <h3>Sessões de {format(diaSelecionado, "dd 'de' MMMM", { locale: pt })}</h3>
                     
                     <div class="sessions-list">
                         {#each sessoesDoDia(diaSelecionado) as sessao}
@@ -180,6 +180,15 @@
 </main>
 
 <style>
+    :root {
+        --primary-color: #0f3460;
+        --secondary-color: #ff0000;
+        --background-dark: #1a1a2e;
+        --text-light: #e0e0e0;
+        --text-muted: #888;
+        --card-bg: #16213e;
+    }
+
     .hero-section {
         min-height: 100vh;
         background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
@@ -299,6 +308,7 @@
         background: #f0f0f0;
         min-width: 65px;
     }
+
     .month-label { 
         background: #cc0000; 
         color: white; 

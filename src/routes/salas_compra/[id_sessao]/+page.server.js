@@ -8,12 +8,22 @@ export async function load({ params, url }) {
 
     try {
         const sessaoRes = await query(`
-            SELECT s.id_sala, s.nome_sala, s.svg_code, es.hora_inicio, e.nome_evento
+            SELECT 
+                s.id_sala,
+                s.nome_sala,
+                s.svg_code,
+
+                es.hora_inicio,
+                es.data_espectaculo,
+
+                e.nome_evento,
+                e.imagem_cartaz
             FROM Sala s
             JOIN Eventos_Sala es ON s.id_sala = es.id_sala
             JOIN Eventos e ON es.id_eventos = e.id_eventos
             WHERE s.id_sala = ? AND e.id_eventos = ?
         `, [id_sala, id_evento]);
+
 
         if (sessaoRes.length === 0) throw error(404, 'Sessão não encontrada');
 

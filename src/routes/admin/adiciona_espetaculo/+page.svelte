@@ -149,9 +149,11 @@ $: if (form?.message) {
     --primary: #0f3460;
     --accent: #ff0000;
     --text: #e0e0e0;
+
 }
 
 .hero-section {
+    background-color: var(--primary);
     min-height: calc(100vh - 80px); /* altura do header */
     display: flex;
     justify-content: center;
@@ -161,12 +163,12 @@ $: if (form?.message) {
 
 
 .form-container {
-    background: rgba(22, 22, 45, 0.95);
+    background: var(--bg);
     padding: 40px;
     border-radius: 15px;
     width: 100%;
     max-width: 1000px;
-    border: 1px solid #3f3f5f;
+    border: 1px solid #303053;
     position: relative;
 }
 

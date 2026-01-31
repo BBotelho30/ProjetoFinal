@@ -121,6 +121,7 @@
     }
 
     .hero-section {
+        background-color: var(--primary);
         min-height: calc(100vh - 80px); /* altura do header */
         display: flex;
         justify-content: center;

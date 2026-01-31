@@ -109,7 +109,7 @@
                     <p>{evento.descricao?.slice(0, 100) || 'Sem descrição disponível.'}</p>
                     <div class="card-actions">
                         <button class="buy-btn" on:click={() => comprar(evento.id_eventos)}>
-                            Comprar Bilhete
+                            Ver Mais
                         </button>
 
                     </div>
