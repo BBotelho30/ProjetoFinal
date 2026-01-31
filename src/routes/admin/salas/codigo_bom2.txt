@@ -1,0 +1,328 @@
+<script lang="ts">
+    // @ts-nocheck
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { user } from '$lib/userStore';
+    import { enhance } from '$app/forms';
+
+    let { data } = $props();
+
+    // Estados Reativos Principais
+    let salaSelecionada = $state('');
+    let modalAberto = $state(false);
+    let svgZonaHtml = $state(''); 
+    let zonaSelecionada = $state('');
+    let precoZona = $state(0);
+    let viewBoxAtiva = $state('0 0 595.28 841.89'); 
+
+    let lugares = $state([]);    
+    let passosPorZona = {};
+    
+    // Estados do Modal
+    let qtdDesejada = $state(50); 
+    let distanciaMetrosH = $state(0.60); 
+    let distanciaMetrosV = $state(0.90);
+    let escalaMetros = 35; 
+
+    // Estados para o Modo Arco Inteligente
+    let pontosArco = $state([]); 
+    let qtdLugaresArco = $state(10); 
+    let ultimoGrupoId = $state(null);
+
+    onMount(() => {
+        if (!$user || $user.tipo !== 'admin') goto('/autenticacao/login');
+    });
+
+    function carregarDadosSala() {
+        const salaAtiva = data.salas?.find(s => s.nome_sala === salaSelecionada);
+        if (salaAtiva?.lugares_guardados) {
+            lugares = salaAtiva.lugares_guardados;
+            passosPorZona = {};
+            lugares.forEach(l => {
+                if (!passosPorZona[l.zona] || l.step > passosPorZona[l.zona]) {
+                    passosPorZona[l.zona] = l.step;
+                }
+            });
+        } else {
+            lugares = [];
+        }
+    }
+
+    function handleZonaClick(event: MouseEvent) {
+        if (event.target instanceof SVGRectElement && event.target.classList.contains('seat-square')) return;
+        const target = event.target as SVGElement;
+        const element = target?.closest('path, polygon, rect, ellipse, circle');
+        if (!element) return;
+        const grafico = element as unknown as SVGGraphicsElement;
+        const bbox = grafico.getBBox();
+        const lugarExistente = lugares.find(l => l.zona === element.id);
+        zonaSelecionada = lugarExistente ? lugarExistente.zona : (element.id || 'Nova Zona');
+        precoZona = lugarExistente ? lugarExistente.preco : 0;
+        const padding = 40;
+        viewBoxAtiva = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
+        const svgModal = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgModal.setAttribute('viewBox', viewBoxAtiva);
+        svgModal.setAttribute('width', '100%');
+        svgModal.setAttribute('height', '100%');
+        svgModal.appendChild(grafico.cloneNode(true));
+        svgZonaHtml = svgModal.outerHTML;
+        modalAberto = true;
+    }
+
+    // FUNÇÃO CORRIGIDA: Usa getScreenCTM para precisão absoluta nas coordenadas
+    function adicionarPontoArco(event) {
+        if (event.target instanceof SVGCircleElement) return;
+        const svg = event.currentTarget;
+        const pt = svg.createSVGPoint();
+        pt.x = event.clientX;
+        pt.y = event.clientY;
+        
+        // Esta é a parte crucial para não "fugir" para a frente
+        const cursorPT = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        if (pontosArco.length < 3) {
+            pontosArco = [...pontosArco, { x: cursorPT.x, y: cursorPT.y }];
+            if (pontosArco.length === 3) gerarLugaresEmArco();
+        }
+    }
+
+    function gerarLugaresEmArco() {
+        const [p0, p1, p2] = pontosArco;
+        const novos = [];
+        const meuStep = (passosPorZona[zonaSelecionada] || 0) + 1;
+        const idUnicoLinha = Math.random(); 
+        ultimoGrupoId = idUnicoLinha;
+
+        for (let i = 0; i < qtdLugaresArco; i++) {
+            const t = i / (qtdLugaresArco - 1);
+            // Bézier Quadrática: B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2
+            const x = Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x;
+            const y = Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y;
+            
+            novos.push({
+                id: Math.random(), x, y,
+                zona: zonaSelecionada, preco: precoZona,
+                fila: 'Arco', num: i + 1, step: meuStep,
+                grupoId: idUnicoLinha
+            });
+        }
+        lugares = [...lugares, ...novos];
+        pontosArco = []; 
+    }
+
+    function apagarUltimaLinha() {
+        if (!ultimoGrupoId) return;
+        lugares = lugares.filter(l => l.grupoId !== ultimoGrupoId);
+        ultimoGrupoId = null;
+    }
+
+    function apagarLugar(id) {
+        lugares = lugares.filter(l => l.id !== id);
+    }
+
+    function preencherArea() {
+        const container = document.querySelector('.editor-svg'); 
+        const shape = container?.querySelector('path, polygon, rect, ellipse, circle');
+        if (!shape) return alert("Forma não encontrada.");
+        const bbox = shape.getBBox();
+        const atualDistH = distanciaMetrosH * escalaMetros;
+        const atualDistV = distanciaMetrosV * escalaMetros;
+        let novos = [];
+        let filaLetra = 65, numLugar = 1;
+        for (let y = bbox.y + (atualDistV / 2); y < bbox.y + bbox.height; y += atualDistV) {
+            let filaTemLugares = false;
+            for (let x = bbox.x + (atualDistH / 2); x < bbox.x + bbox.width; x += atualDistH) {
+                const pt = container.createSVGPoint();
+                pt.x = x; pt.y = y;
+                if (shape.isPointInFill(pt)) {
+                    if (novos.length < qtdDesejada) {
+                        novos.push({
+                            id: Math.random(), x, y,
+                            zona: zonaSelecionada, preco: precoZona,
+                            fila: String.fromCharCode(filaLetra), num: numLugar++,
+                            step: (passosPorZona[zonaSelecionada] || 0) + 1
+                        });
+                        filaTemLugares = true;
+                    }
+                }
+            }
+            if (filaTemLugares) { filaLetra++; numLugar = 1; }
+        }
+        lugares = [...lugares.filter(l => l.zona !== zonaSelecionada), ...novos];
+        modalAberto = false;
+    }
+
+    function apagarZona(){
+        if(confirm(`Apagar todos os lugares da zona "${zonaSelecionada}"?`)){
+            lugares = lugares.filter(l => l.zona !== zonaSelecionada);
+            modalAberto = false;
+        }
+    }
+
+    $effect(() => {
+        if (modalAberto) {
+            const lugaresAtuais = lugares.filter(l => l.zona === zonaSelecionada);
+            if (lugaresAtuais.length > 0) qtdDesejada = lugaresAtuais.length;
+        }
+    });
+</script>
+
+<div class="admin-container">
+    <aside class="sidebar">
+        <h2>QuickSeat Admin</h2>
+        <div class="field-group">
+            <label>Sala para Editar</label>
+            <select bind:value={salaSelecionada} onchange={carregarDadosSala}>
+                <option value="">--- Selecionar Sala ---</option>
+                {#each data.salas as s}
+                    <option value={s.nome_sala}>{s.nome_sala}</option>
+                {/each}
+            </select>
+        </div>
+        <button class="btn-secondary" onclick={() => goto('/admin/salas/adicionar_salas')}>+ Criar Nova Sala</button>
+        <hr/>
+        {#if salaSelecionada}
+            <div class="action-box">
+                <p>Lugares: <strong>{lugares.length}</strong></p>
+                <form method="POST" action="?/guardarLugares" use:enhance>
+                    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
+                    <input type="hidden" name="sala" value={salaSelecionada} />
+                    <button type="submit" class="btn-primary">Guardar Desenho</button>
+                </form>
+                <button class="btn-outline-danger" onclick={() => { if(confirm('Limpar Tudo?')) lugares = [] }}>Limpar Mapa</button>
+            </div>
+        {/if}
+    </aside>
+
+    <main class="canvas-area">
+        {#if salaSelecionada}
+            {@const s = data.salas.find(x => x.nome_sala === salaSelecionada)}
+            <div class="svg-wrapper">
+                <div class="svg-bg" onclick={handleZonaClick} aria-hidden="true">
+                    {@html s.svg_code}
+                </div>
+                <svg class="svg-overlay" viewBox="0 0 595.28 841.89" preserveAspectRatio="xMidYMid meet">
+                    {#each lugares as l}
+                        <rect x={l.x - 3} y={l.y - 3} width="6" height="6" class="seat-square" onclick={(e) => { e.stopPropagation(); apagarLugar(l.id); }} />
+                    {/each}
+                </svg>
+            </div>
+        {/if}
+    </main>
+</div>
+
+{#if modalAberto}
+    <div class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Setor: {zonaSelecionada}</h3>
+                <button class="close-btn" onclick={() => modalAberto = false}>&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="field-group">
+                    <label>Nome da Zona</label>
+                    <input type="text" bind:value={zonaSelecionada} />
+                </div>
+
+                <div class="field-group">
+                    <label>Preço Base (€)</label>
+                    <input type="number" step="0.5" bind:value={precoZona} />
+                </div>
+
+                <div class="field-group arco-box">
+                    <label style="color: #3b82f6; font-weight: bold;">Modo Arco (3 Cliques)</label>
+                    <div class="grid-3" style="align-items: flex-end;">
+                        <div>
+                            <label>Lugares</label>
+                            <input type="number" bind:value={qtdLugaresArco} min="2" />
+                        </div>
+                        <button type="button" class="btn-action btn-yellow" onclick={(e) => { e.stopPropagation(); apagarUltimaLinha(); }}>
+                            Anular Linha
+                        </button>
+                        <button type="button" class="btn-action btn-red" onclick={(e) => { e.stopPropagation(); pontosArco = []; }}>
+                            Limpar Pontos
+                        </button>
+                    </div>
+                    
+                    <div class="svg-editor-container">
+                        <svg viewBox={viewBoxAtiva} class="editor-svg" onclick={adicionarPontoArco}>
+                            {@html svgZonaHtml.replace(/<svg[^>]*>|<\/svg>/g, '')}
+                            
+                            {#each pontosArco as p}
+                                <circle cx={p.x} cy={p.y} r="4" fill="#ef4444" stroke="white" stroke-width="1" />
+                                {#if pontosArco.length === 2 && p === pontosArco[1]}
+                                     <line x1={pontosArco[0].x} y1={pontosArco[0].y} x2={pontosArco[1].x} y2={pontosArco[1].y} stroke="#ef4444" stroke-dasharray="2" />
+                                {/if}
+                            {/each}
+                            
+                            {#each lugares.filter(l => l.zona === zonaSelecionada) as lug}
+                                <rect x={lug.x - 2} y={lug.y - 2} width="4" height="4" fill="#10b981" onclick={(e) => { e.stopPropagation(); apagarLugar(lug.id); }} />
+                            {/each}
+                        </svg>
+                    </div>
+                    <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 5px;">Cliques realizados: {pontosArco.length} / 3</p>
+                </div>
+
+                <div class="field-group">
+                    <label>Grelha Automática (Quantidade)</label>
+                    <input type="number" bind:value={qtdDesejada} min="1" />
+                </div>
+
+                <div class="grid-2">
+                    <div class="field-group">
+                        <label>Cadeiras: <strong>{distanciaMetrosH}m</strong></label>
+                        <input type="range" min="0.3" max="1.5" step="0.05" bind:value={distanciaMetrosH} />
+                    </div>
+                    <div class="field-group">
+                        <label>Filas: <strong>{distanciaMetrosV}m</strong></label>
+                        <input type="range" min="0.4" max="2.0" step="0.05" bind:value={distanciaMetrosV} />
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-primary" onclick={preencherArea}>Gerar Grelha Reta</button>
+                <button class="btn-outline-danger" onclick={apagarZona}>Limpar Esta Zona</button>
+            </div>
+        </div>
+    </div>
+{/if}
+
+<style>
+    :global(*) { box-sizing: border-box; }
+    :global(body) { margin: 0; background: #020617; color: white; font-family: sans-serif; }
+    .admin-container { display: flex; height: 100vh; }
+    .sidebar { width: 300px; background: #1e293b; padding: 2rem; border-right: 1px solid #334155; }
+    .canvas-area { flex: 1; display: flex; justify-content: center; align-items: center; background: #0f172a; position: relative; }
+    .svg-wrapper { position: relative; background: white; padding: 20px; border-radius: 8px; height: 90vh; }
+    .svg-bg { height: 100%; cursor: cell; }
+    :global(.svg-bg svg) { height: 100%; width: auto; display: block; }
+    .svg-overlay { position: absolute; top: 20px; left: 20px; width: calc(100% - 40px); height: calc(100% - 40px); pointer-events: none; }
+    .seat-square { fill: #3b82f6; stroke: white; stroke-width: 0.2; pointer-events: auto; cursor: pointer; }
+    .seat-square:hover { fill: #ef4444; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+    .modal-card { background: #1e293b; width: 480px; max-height: 95vh; border-radius: 12px; display: flex; flex-direction: column; }
+    .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 1.5rem; border-top: 1px solid #334155; display: flex; flex-direction: column; gap: 10px; }
+
+    .arco-box { background: #162031; padding: 15px; border-radius: 10px; border: 1px solid #334155; }
+    .svg-editor-container { width: 100%; height: 280px; background: #0f172a; border-radius: 8px; border: 2px dashed #475569; margin-top: 10px; cursor: crosshair; overflow: hidden; }
+    .editor-svg { width: 100%; height: 100%; display: block; }
+
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .btn-action { padding: 10px; border-radius: 6px; cursor: pointer; height: 38px; font-size: 0.75rem; border: none; font-weight: bold; }
+    .btn-yellow { background: #f59e0b; color: white; }
+    .btn-red { background: #ef4444; color: white; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+    .field-group { margin-bottom: 1rem; }
+    label { font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 0.6rem; background: #0f172a; border: 1px solid #334155; color: white; border-radius: 6px; }
+    .btn-primary { width: 100%; background: #10b981; color: white; padding: 0.8rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-secondary { width: 100%; background: #3b82f6; color: white; padding: 0.8rem; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 10px; }
+    .btn-outline-danger { width: 100%; background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 0.6rem; border-radius: 6px; cursor: pointer; }
+    .close-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; float: right; }
+    hr { border: 0; border-top: 1px solid #334155; margin: 1rem 0; }
+</style>

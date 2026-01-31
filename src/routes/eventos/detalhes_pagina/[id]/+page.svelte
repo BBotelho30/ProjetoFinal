@@ -14,6 +14,7 @@
         subMonths,
         parseISO 
     } from 'date-fns';
+
     import { pt } from 'date-fns/locale'; // Para meses em português
     import { user } from '$lib/userStore';
 
@@ -85,6 +86,8 @@
     // Reatividade do Svelte
     $: diasCalendario = gerarCalendario(dataReferencia);
     $: nomeMesAtual = format(dataReferencia, 'MMMM yyyy', { locale: pt }).toUpperCase();
+
+    
 </script>
 
 <main class="hero-section">

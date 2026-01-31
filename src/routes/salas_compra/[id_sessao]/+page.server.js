@@ -6,9 +6,11 @@ export async function load({ params, url }) {
     const id_sala = params.id_sessao;
     const id_evento = url.searchParams.get('evento');
 
+    // Buscar dados da sessão e sala
     try {
         const sessaoRes = await query(`
             SELECT 
+
                 s.id_sala,
                 s.nome_sala,
                 s.svg_code,
@@ -25,14 +27,25 @@ export async function load({ params, url }) {
         `, [id_sala, id_evento]);
 
 
+        // Verificar se a sessão existe
         if (sessaoRes.length === 0) throw error(404, 'Sessão não encontrada');
 
         const lugares = await query(`
-            SELECT id_lugar, fila, coluna as num, coordenadas_x as x, coordenadas_y as y, id_zona
-            FROM Lugar 
-            WHERE id_sala = ?
+            SELECT 
+                l.id_lugar, 
+                l.fila, 
+                l.coluna as num, 
+                l.coordenadas_x as x, 
+                l.coordenadas_y as y, 
+                l.id_zona,
+                z.nome_zona as zona,
+                z.preco_base as preco
+            FROM Lugar l
+            JOIN Zona z ON l.id_zona = z.id_zona
+            WHERE l.id_sala = ?
         `, [id_sala]);
 
+        // Retornar os dados
         return {
             sessao: JSON.parse(JSON.stringify(sessaoRes[0])),
             lugares: JSON.parse(JSON.stringify(lugares))

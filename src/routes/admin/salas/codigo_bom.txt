@@ -1,0 +1,378 @@
+<script lang="ts">
+    // @ts-nocheck
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { user } from '$lib/userStore';
+    import { enhance } from '$app/forms';
+
+    let { data } = $props();
+
+    // Estados Reativos Principais
+    let salaSelecionada = $state('');
+    let modalAberto = $state(false);
+    let svgZonaHtml = $state(''); 
+    let zonaSelecionada = $state('');
+    let precoZona = $state(0);
+    let viewBoxAtiva = $state('0 0 595.28 841.89'); 
+
+    let lugares = $state([]);    
+    let passosPorZona = {};
+    
+    // Estados do Modal (Guardam os dados preenchidos)
+    let qtdDesejada = $state(50); 
+    let distanciaMetrosH = $state(0.60); 
+    let distanciaMetrosV = $state(0.90);
+    let escalaMetros = 35; 
+    
+
+
+    onMount(() => {
+        if (!$user || $user.tipo !== 'admin') goto('/autenticacao/login');
+    });
+
+    function carregarDadosSala() {
+        const salaAtiva = data.salas?.find(s => s.nome_sala === salaSelecionada);
+        if (salaAtiva?.lugares_guardados) {
+            lugares = salaAtiva.lugares_guardados;
+            passosPorZona = {};
+            lugares.forEach(l => {
+                if (!passosPorZona[l.zona] || l.step > passosPorZona[l.zona]) {
+                    passosPorZona[l.zona] = l.step;
+                }
+            });
+        } else {
+            lugares = [];
+        }
+    }
+
+    function handleZonaClick(event: MouseEvent) {
+        const target = event.target as SVGElement;
+        const element = target?.closest('path, polygon, rect, ellipse, circle');
+        if (!element) return;
+
+        const grafico = element as unknown as SVGGraphicsElement;
+        const bbox = grafico.getBBox();
+        
+        const lugarExistente = lugares.find(l => l.zona === element.id);
+        zonaSelecionada = lugarExistente ? lugarExistente.zona : (element.id || 'Nova Zona');
+        precoZona = lugarExistente ? lugarExistente.preco : 0;
+
+        const padding = 40;
+        viewBoxAtiva = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
+        
+        const svgModal = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgModal.setAttribute('viewBox', viewBoxAtiva);
+        svgModal.setAttribute('width', '100%');
+        svgModal.setAttribute('height', '100%');
+        svgModal.appendChild(grafico.cloneNode(true));
+        svgZonaHtml = svgModal.outerHTML;
+
+        modalAberto = true;
+    }
+
+    // FUNÇÃO PARA APAGAR LUGAR INDIVIDUAL
+    function apagarLugar(id) {
+        lugares = lugares.filter(l => l.id !== id);
+    }
+
+    function preencherArea() {
+        if (!qtdDesejada || qtdDesejada <= 0) return alert("Insira um número válido.");
+
+        const container = document.querySelector('.svg-preview svg');
+        const shape = container?.querySelector('path, polygon, rect, ellipse, circle');
+        if (!shape) return;
+
+        const bbox = shape.getBBox();
+        const meuStep = (passosPorZona[zonaSelecionada] || 0) + 1;
+
+        const atualDistH = distanciaMetrosH * escalaMetros;
+        const atualDistV = distanciaMetrosV * escalaMetros;
+
+
+        let pontosValidos = [];
+        for (let y = bbox.y + (atualDistV / 2); y < bbox.y + bbox.height; y += atualDistV) {
+            for (let x = bbox.x + (atualDistH / 2); x < bbox.x + bbox.width; x += atualDistH) {
+                const pt = container.createSVGPoint();
+                pt.x = x; pt.y = y;
+                if (shape.isPointInFill(pt)) pontosValidos.push({ x, y });
+            }
+        }
+
+        if (qtdDesejada > pontosValidos.length) {
+            return alert(`Só cabem ${pontosValidos.length} lugares nesta configuração.`);
+        }
+
+        let novos = [];
+        let filaLetra = 65, numLugar = 1, ultimoY = -1;
+
+        for (let i = 0; i < qtdDesejada; i++) {
+            const p = pontosValidos[i];
+            if (ultimoY !== -1 && Math.abs(p.y - ultimoY) > (atualDistV / 2)) { 
+                filaLetra++; 
+                numLugar = 1; 
+            }
+            novos.push({
+                id: Math.random(),
+                x: p.x, y: p.y, zona: zonaSelecionada, preco: precoZona,
+                fila: String.fromCharCode(filaLetra), num: numLugar++, 
+                step: meuStep
+            });
+            ultimoY = p.y;
+        }
+        // Remover lugares antigos da mesma zona
+        const outrosLugares = lugares.filter(l => l.zona !== zonaSelecionada);
+
+        lugares = [...lugares, ...novos];
+        passosPorZona[zonaSelecionada] = meuStep;
+        modalAberto = false;
+    }
+
+    function apagarZona(){
+        if(confirm(`Apagar todos os lugares da zona "${zonaSelecionada}"?`)){
+            lugares = lugares.filter(l => l.zona !== zonaSelecionada);
+            modalAberto = false;
+        }
+    }
+
+    $effect(() => {
+            if (modalAberto) {
+                const lugaresAtuais = lugares.filter(l => l.zona === zonaSelecionada);
+                if (lugaresAtuais.length > 0) {
+                    qtdDesejada = lugaresAtuais.length;
+                } else {
+                    qtdDesejada = 50; 
+                }
+            }
+        });
+</script>
+
+<div class="admin-container">
+    <aside class="sidebar">
+        <h2>QuickSeat Admin</h2>
+        
+        <div class="field-group">
+            <label>Sala para Editar</label>
+            <select bind:value={salaSelecionada} onchange={carregarDadosSala}>
+                <option value="">--- Selecionar Sala ---</option>
+                {#each data.salas as s}
+                    <option value={s.nome_sala}>{s.nome_sala}</option>
+                {/each}
+            </select>
+        </div>
+
+        <button class="btn-secondary" onclick={() => goto('/admin/salas/adicionar_salas')}>
+            + Criar Nova Sala
+        </button>
+
+        <hr/>
+
+        {#if salaSelecionada}
+            <div class="action-box">
+                <p>Lugares no Mapa: <strong>{lugares.length}</strong></p>
+                <form method="POST" action="?/guardarLugares" use:enhance>
+                    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
+                    <input type="hidden" name="sala" value={salaSelecionada} />
+                    <button type="submit" class="btn-primary">Guardar Desenho</button>
+                </form>
+                <button class="btn-outline-danger" onclick={() => { if(confirm('Limpar?')) lugares = [] }}>Limpar Mapa</button>
+                <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 10px;">Dica: Clique num quadrado azul para o apagar.</p>
+            </div>
+        {/if}
+    </aside>
+
+    <main class="canvas-area">
+        {#if salaSelecionada}
+            {@const s = data.salas.find(x => x.nome_sala === salaSelecionada)}
+            <div class="svg-wrapper" onclick={handleZonaClick} aria-hidden="true">
+                <div class="svg-bg">{@html s.svg_code}</div>
+                
+                <svg class="svg-overlay" viewBox="0 0 595.28 841.89" preserveAspectRatio="xMidYMid meet">
+                    {#each lugares as l}
+                        <rect 
+                            x={l.x - 3} y={l.y - 3} 
+                            width="6" height="6" 
+                            class="seat-square" 
+                            onclick={(e) => { e.stopPropagation(); apagarLugar(l.id); }}
+                        />
+                    {/each}
+                </svg>
+            </div>
+        {:else}
+            <div class="empty-msg">Selecione uma sala para começar</div>
+        {/if}
+    </main>
+</div>
+
+{#if modalAberto}
+    <div class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>Configuração de Setor</h3>
+                <button class="close-btn" onclick={() => modalAberto = false}>&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="field-group">
+                    <label>Nome da Zona</label>
+                    <input type="text" bind:value={zonaSelecionada} />
+                </div>
+
+                <div class="field-group">
+                    <label>Preço Base (€)</label>
+                    <input type="number" step="0.5" bind:value={precoZona} />
+                </div>
+
+                <div class="svg-preview">
+                    {@html svgZonaHtml}
+                </div>
+
+                <div class="field-group">
+                    <label>Quantidade de Lugares</label>
+                    <input type="number" bind:value={qtdDesejada} min="1" />
+                </div>
+
+                <hr/>
+                <p style="font-size: 0.8rem; color: #10b981; margin-bottom: 1rem;">Ajuste de Medidas Reais:</p>
+
+                <div class="field-group">
+                    <label>Entre Cadeiras: <strong>{distanciaMetrosH}m</strong></label>
+                    <input type="range" min="0.3" max="1.5" step="0.05" bind:value={distanciaMetrosH} />
+                </div>
+
+                <div class="field-group">
+                    <label>Entre Filas: <strong>{distanciaMetrosV}m</strong></label>
+                    <input type="range" min="0.4" max="2.0" step="0.05" bind:value={distanciaMetrosV} />
+                </div>
+            </div>
+
+
+            <div class="modal-footer" style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-primary" onclick={preencherArea}>
+                    Gerar Lugares
+                </button>
+                
+                <button class="btn-outline-danger" onclick={apagarZona}>
+                    Apagar Todos os Lugares desta Zona
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}
+<style>
+
+    .seat-square { 
+        fill: #3b82f6; 
+        stroke: white; 
+        stroke-width: 0.2; 
+        pointer-events: auto; /* IMPORTANTE: Permite clicar nos quadrados */
+        cursor: pointer;
+    }
+    .seat-square:hover { fill: #ef4444; } /* Feedback visual para apagar */
+
+    .modal-card { background: #1e293b; width: 450px; max-height: 90vh; display: flex; flex-direction: column; border-radius: 12px; }
+    .modal-body { padding: 1.5rem 2rem; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid #334155; }
+    :global(body) { margin: 0; padding: 0; }
+
+    .admin-container { 
+        display: flex; 
+        height: 100vh; 
+        background-color: #0f172a; 
+        color: white; 
+        font-family: sans-serif;
+    }
+
+    .sidebar { 
+        width: 300px; 
+        background: #1e293b; 
+        padding: 2rem; 
+        border-right: 1px solid #334155;
+    }
+
+    .field-group { margin-bottom: 1rem; }
+    .field-group label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.4rem; }
+    
+    select, input {
+        width: 100%;
+        padding: 0.6rem;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 6px;
+        color: white;
+    }
+
+    .btn-primary { 
+        width: 100%; background: #10b981; color: white; padding: 0.8rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+    }
+
+    .btn-secondary { 
+        width: 100%; background: #3b82f6; color: white; padding: 0.8rem; border: none; border-radius: 6px; cursor: pointer; margin-top: 10px;
+    }
+
+    .btn-outline-danger {
+        width: 100%; background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 0.5rem; margin-top: 10px; border-radius: 6px; cursor: pointer;
+    }
+
+    .canvas-area { 
+        flex: 1; display: flex; justify-content: center; align-items: center; background: #020617; overflow: hidden;
+    }
+
+    .svg-wrapper { 
+        position: relative; 
+        background: white; 
+        padding: 20px; 
+        border-radius: 8px; 
+        height: 90vh;
+        display: flex;
+        justify-content: center;
+    }
+
+    .svg-bg { height: 100%; display: flex; }
+    :global(.svg-bg svg) { height: 100%; width: auto; display: block; }
+
+    .svg-overlay { 
+        position: absolute; 
+        top: 20px; 
+        left: 20px;
+        width: calc(100% - 40px);
+        height: calc(100% - 40px);
+        pointer-events: none; 
+    }
+
+    .seat-square { fill: #3b82f6; stroke: white; stroke-width: 0.2; }
+
+    /* Estilos do Modal com Scroll */
+    .modal-overlay { 
+        position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; 
+    }
+
+    .modal-card { 
+        background: #1e293b; 
+        width: 450px; 
+        max-height: 90vh; 
+        display: flex; 
+        flex-direction: column; 
+        border-radius: 12px; 
+    }
+
+    .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid #334155; }
+    
+    .modal-body { 
+        padding: 1.5rem 2rem; 
+        overflow-y: auto; 
+        flex: 1; 
+    }
+
+    .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid #334155; }
+
+    .svg-preview { 
+        width: 120px; height: 120px; margin: 1rem auto; background: #0f172a; padding: 10px; border-radius: 8px; 
+    }
+    :global(.svg-preview svg) { width: 100%; height: 100%; display: block; }
+
+    .close-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; float: right; }
+    hr { border: 0; border-top: 1px solid #334155; margin: 1.5rem 0; }
+    .empty-msg { color: #475569; font-size: 1.2rem; }
+
+    
+</style>

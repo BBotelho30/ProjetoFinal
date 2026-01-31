@@ -12,6 +12,8 @@ export const load = async () => {
                 l.coordenadas_x as x, 
                 l.coordenadas_y as y, 
                 z.nome_zona as zona, 
+                z.nome_zona as zona,
+                z.preco_base as preco,
                 l.fila, 
                 l.coluna as num, 
                 l.id_sala
@@ -55,11 +57,11 @@ export const actions = {
             for (const l of lugares) {
                 if (!mapaZonas[l.zona]) {
                     const novaZona = await query(
-                        'INSERT INTO Zona (nome_zona, id_sala) VALUES (?, ?)',
-                        [l.zona, id_sala]
+                         'INSERT INTO Zona (nome_zona, id_sala, preco_base) VALUES (?, ?, ?)',
+                        [l.zona, id_sala, l.preco || 0] // Agora passamos os 3 valores corretamente
                     );
-                    mapaZonas[l.zona] = novaZona.insertId;
-                }
+                        mapaZonas[l.zona] = novaZona.insertId;
+            }
                 const id_zona_final = mapaZonas[l.zona];
 
                 await query(

@@ -5,384 +5,285 @@
     import { user } from '$lib/userStore';
     import { enhance } from '$app/forms';
 
-    export let data;
+    let { data } = $props();
 
-    let salaSelecionada = '';
-    let modalAberto = false;
-    let svgZonaHtml = ''; 
-    let zonaSelecionada = '';
-    let viewBoxAtiva = '0 0 595.28 841.89'; 
+    // Estados Globais
+    let salaSelecionada = $state('');
+    let lugares = $state([]);
+    let modalAberto = $state(false);
+    let zonaAtiva = $state({ id: '', nome: '' });
+    
+    // Histórico de configurações técnicas por zona (Persistência Local)
+    let configZonas = $state({}); 
 
-    const RAIO_BOLA = 4;
-    const DISTANCIA_FILAS = 22; 
-
-    let pontosGuia = [];
-    let lugares = [];
-    let nomeFila = 'A';
-    let qtdLugares = 10;
-    let ultimaCurva = []; 
-    let contadorPassos = 0;
-    let passosPorZona = {};
-    let showToast = false;
+    // Estado dos Inputs do Modal
+    let config = $state({
+        filas: 10,
+        cols: 15,
+        espacamento: 35,
+        letraInicial: 'A',
+        numInicial: 1
+    });
 
     onMount(() => {
-        const currentUser = $user;
-        if (!currentUser || currentUser.tipo !== 'admin') goto('/autenticacao/login');
+        if (!$user || $user.tipo !== 'admin') goto('/autenticacao/login');
     });
 
     function carregarDadosSala() {
-        const salaAtiva = data.salas?.find(s => s.nome_sala === salaSelecionada);
-        if (salaAtiva && salaAtiva.lugares_guardados) {
-            lugares = salaAtiva.lugares_guardados;
-            passosPorZona = {};
-            lugares.forEach(l => {
-                if (!passosPorZona[l.zona] || l.step > passosPorZona[l.zona]) {
-                    passosPorZona[l.zona] = l.step;
-                }
-            });
+        const sala = data.salas?.find(s => s.nome_sala === salaSelecionada);
+        lugares = sala?.lugares_guardados || [];
+        
+        if (sala?.config_zonas) {
+            configZonas = typeof sala.config_zonas === 'string' ? JSON.parse(sala.config_zonas) : sala.config_zonas;
         } else {
-            lugares = [];
-            passosPorZona = {};
+            configZonas = {};
         }
     }
 
-    function handleZonaClick(event: MouseEvent) {
-        const target = event.target as SVGElement;
-        const element = target?.closest('path, polygon, rect, ellipse, circle');
-        if (!element) return;
-        const grafico = element as unknown as SVGGraphicsElement;
-        const bbox = grafico.getBBox();
+    function selecionarZona(event) {
+        const target = event.target.closest('path, polygon, rect');
+        if (!target) return;
+
+        const bbox = target.getBBox();
+        // Gerar ID estável baseado na geometria se o SVG não tiver IDs
+        const generatedId = target.id || `z-${Math.round(bbox.x)}-${Math.round(bbox.y)}`;
         
-        let nomeEncontrado = element.id || '';
-        if (!nomeEncontrado) {
-            const lugarExistente = lugares.find(l => 
-                l.x >= bbox.x && l.x <= (bbox.x + bbox.width) &&
-                l.y >= bbox.y && l.y <= (bbox.y + bbox.height)
-            );
-            if (lugarExistente) nomeEncontrado = lugarExistente.zona;
+        // Tentar recuperar nome guardado, senão usa o padrão do SVG
+        let nomeExistente = target.getAttribute('data-name') || target.id || 'Nova Zona';
+        if (configZonas[generatedId]?.nome) {
+            nomeExistente = configZonas[generatedId].nome;
         }
 
-        zonaSelecionada = nomeEncontrado;
-        const padding = 40;
-        viewBoxAtiva = `${bbox.x - padding} ${bbox.y - padding} ${bbox.width + padding * 2} ${bbox.height + padding * 2}`;
+        zonaAtiva = {
+            id: generatedId,
+            nome: nomeExistente
+        };
 
-        const svgModal = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svgModal.setAttribute('viewBox', viewBoxAtiva);
-        svgModal.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-        svgModal.appendChild(grafico.cloneNode(true));
-
-        svgZonaHtml = svgModal.outerHTML;
-        pontosGuia = []; 
-        
-        contadorPassos = passosPorZona[zonaSelecionada] || 0;
-        const lugaresDestaZona = lugares.filter(l => 
-            zonaSelecionada && l.zona.toString().trim().toLowerCase() === zonaSelecionada.toString().trim().toLowerCase()
-        );
-        if (lugaresDestaZona.length > 0) {
-            const ultimaFila = [...lugaresDestaZona].sort((a,b) => a.step - b.step).pop()?.fila || 'A';
-            nomeFila = String.fromCharCode(ultimaFila.charCodeAt(0) + 1);
+        // Carregar configurações técnicas se existirem
+        if (configZonas[generatedId]) {
+            config = { ...configZonas[generatedId] };
         } else {
-            nomeFila = 'A';
+            config = { filas: 10, cols: 15, espacamento: 35, letraInicial: 'A', numInicial: 1 };
         }
+
         modalAberto = true;
     }
 
-    function handleModalInteraction(event) {
-        event.preventDefault();
-        const svgOverlay = event.currentTarget;
-        const pt = svgOverlay.createSVGPoint();
-        pt.x = event.clientX; pt.y = event.clientY;
-        const cursorPt = pt.matrixTransform(svgOverlay.getScreenCTM()?.inverse()); 
-        if (!cursorPt) return;
-        if (event.button === 0) {
-            if (pontosGuia.length < 3) pontosGuia = [...pontosGuia, { x: cursorPt.x, y: cursorPt.y }];
-        } else if (event.button === 2) {
-            pontosGuia = [];
-        }
-    }
+    function gerarGrelhaNoBlueprint() {
+        const novos = [];
+        const offsetX = 100;
+        const offsetY = 80;
 
- function processarFila(pontos) {
-        if (pontos.length < 2 || !zonaSelecionada) return;
-        
-        const elementoZona = document.querySelector('.svg-background svg > *');
-        if (!elementoZona) return;
-        
-        const margens = elementoZona.getBBox();
-        const p0 = pontos[0];
-        const p2 = pontos[pontos.length - 1];
-        
-        let p1 = pontos.length === 3 
-            ? { x: 2 * pontos[1].x - 0.5 * p0.x - 0.5 * p2.x, y: 2 * pontos[1].y - 0.5 * p0.y - 0.5 * p2.y }
-            : { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 };
+        // Guardar logo a configuração e o nome atual no histórico
+        configZonas[zonaAtiva.id] = { ...config, nome: zonaAtiva.nome };
 
-        const meuStep = (passosPorZona[zonaSelecionada] || 0) + 1;
-        let filaTemporaria = [];
-        let foraDosLimites = false;
-
-        for (let i = 0; i < qtdLugares; i++) {
-            const t = qtdLugares > 1 ? i / (qtdLugares - 1) : 0.5;
-            const xFinal = Math.pow(1 - t, 2) * p0.x + 2 * (1 - t) * t * p1.x + Math.pow(t, 2) * p2.x;
-            const yFinal = Math.pow(1 - t, 2) * p0.y + 2 * (1 - t) * t * p1.y + Math.pow(t, 2) * p2.y;
-
-            
-            if (
-                xFinal < margens.x || 
-                xFinal > (margens.x + margens.width) || 
-                yFinal < margens.y || 
-                yFinal > (margens.y + margens.height)
-            ) {
-                foraDosLimites = true;
-                break; // Interrompe a criação dessa fila
+        for (let f = 0; f < config.filas; f++) {
+            const labelFila = String.fromCharCode(config.letraInicial.charCodeAt(0) + f);
+            for (let c = 0; c < config.cols; c++) {
+                novos.push({
+                    id: Math.random(),
+                    x: offsetX + (c * config.espacamento),
+                    y: offsetY + (f * config.espacamento),
+                    zona: zonaAtiva.id,
+                    nomeZona: zonaAtiva.nome,
+                    fila: labelFila,
+                    num: config.numInicial + c,
+                    visivel: true
+                });
             }
-
-            filaTemporaria.push({
-                x: xFinal, y: yFinal, zona: zonaSelecionada,
-                fila: nomeFila, num: i + 1, id: Date.now() + i, step: meuStep
-            });
         }
-
-        if (foraDosLimites) {
-            alert(`Aviso: A fila da zona "${zonaSelecionada}" ultrapassou as bordas permitidas e não foi criada.`);
-            pontosGuia = []; // Limpa os pontos para o utilizador tentar de novo
-            return;
-        }
-
-        if (filaTemporaria.length > 0) {
-            lugares = [...lugares, ...filaTemporaria];
-            passosPorZona[zonaSelecionada] = meuStep;
-            contadorPassos = meuStep;
-            ultimaCurva = pontos;
-            nomeFila = String.fromCharCode(nomeFila.charCodeAt(0) + 1);
-            pontosGuia = [];
-        }
+        
+        const outrosLugares = lugares.filter(l => l.zona !== zonaAtiva.id);
+        lugares = [...outrosLugares, ...novos];
     }
 
-    function carimbarFila() {
-        if (ultimaCurva.length < 2) return;
-        processarFila(ultimaCurva.map(p => ({ x: p.x, y: p.y + DISTANCIA_FILAS })));
-    }
-
-    function desfazer() {
-        const stepAtual = passosPorZona[zonaSelecionada] || 0;
-        if (stepAtual === 0) return;
-        lugares = lugares.filter(l => !(l.zona === zonaSelecionada && l.step === stepAtual));
-        passosPorZona[zonaSelecionada] = stepAtual - 1;
-        contadorPassos = passosPorZona[zonaSelecionada];
-        if (nomeFila !== 'A') nomeFila = String.fromCharCode(nomeFila.charCodeAt(0) - 1);
-    }
-
-    function fecharModal() {
+    function fecharESalvarZona() {
+        // 1. Guardar snapshot final da técnica e do nome no histórico
+        configZonas[zonaAtiva.id] = { ...config, nome: zonaAtiva.nome };
+        
+        // 2. Sincronizar o nome em todos os lugares desta zona
+        lugares = lugares.map(l => {
+            if (l.zona === zonaAtiva.id) {
+                return { ...l, nomeZona: zonaAtiva.nome };
+            }
+            return l;
+        });
+        
         modalAberto = false;
-        svgZonaHtml = '';
     }
 
-    function limparZonaAtual() {
-        if (!zonaSelecionada) return;
-        if (confirm(`Desejas apagar todos os lugares da zona "${zonaSelecionada}"?`)) {
-            lugares = lugares.filter(l => 
-                l.zona.toString().trim().toLowerCase() !== zonaSelecionada.toString().trim().toLowerCase()
-            );
-            passosPorZona[zonaSelecionada] = 0;
-            contadorPassos = 0;
-            nomeFila = 'A';
-            ultimaCurva = [];
-        }
-    }
-
-    function handleGuardar() {
-        return async ({ result }) => {
-            if (result.type === 'success') {
-                alert('Sucesso! O desenho da sala foi guardado na base de dados.');
-                // Opcional: recarregar os dados da página para atualizar o load
-                location.reload(); 
-            } else if (result.type === 'failure') {
-                alert('Erro: Não foi possível guardar o desenho. Verifique a consola.');
-            }
-        };
+    function alternarVisibilidade(id) {
+        lugares = lugares.map(l => l.id === id ? { ...l, visivel: !l.visivel } : l);
     }
 </script>
 
 <div class="admin-container">
     <aside class="sidebar">
-        <h2>Gestor de Salas</h2>
-        <div class="input-group">
-            <label for="sala">Escolher Sala</label>
-            <select id="sala" bind:value={salaSelecionada} on:change={carregarDadosSala}>
-                <option value="">--- Selecionar ---</option>
-                {#if data.salas}
-                    {#each data.salas as s}
-                        <option value={s.nome_sala}>{s.nome_sala}</option>
-                    {/each}
-                {/if}
+        <h2>QuickSeat Admin</h2>
+        
+        <div class="field-group">
+            <label>SALA ATIVA</label>
+            <select bind:value={salaSelecionada} onchange={carregarDadosSala}>
+                <option value="">--- Selecionar Sala ---</option>
+                {#each data.salas as s}
+                    <option value={s.nome_sala}>{s.nome_sala}</option>
+                {/each}
             </select>
         </div>
-        <button class="btn-new-room" on:click={() => goto('/admin/salas/adicionar_salas')}>+ Criar Nova Sala</button>
-        <hr/>
-        
-        {#if salaSelecionada}
-        <div class="stats">
-            <p>Lugares no desenho: <strong>{lugares.length}</strong></p>
-            
-            <form method="POST" action="?/guardarLugares" use:enhance={handleGuardar}>
-                <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
-                <input type="hidden" name="sala" value={salaSelecionada} />
-                
-                <button type="submit" class="btn-save" style="background: {lugares.length === 0 ? '#ef4444' : '#10b981'}">
-                    {lugares.length === 0 ? 'Apagar' : 'Guardar Desenho'}
-                </button>
-            </form>
-        </div>
-    {/if}
-</aside>
 
-    <main class="editor-main">
+        <button class="btn-create-room" onclick={() => goto('/admin/salas/adicionar_salas')}>
+            + Criar Nova Sala
+        </button>
+
         {#if salaSelecionada}
-            {@const salaAtiva = data.salas?.find(s => s.nome_sala === salaSelecionada)}
-            <div class="canvas-view">
-                <div class="svg-container" on:click={handleZonaClick} role="presentation">
-                    {#if salaAtiva?.svg_code}
-                        <div style="pointer-events: all;">{@html salaAtiva.svg_code}</div>
-                    {/if}
-                    <svg class="global-overlay" viewBox="0 0 595.28 841.89" style="position: absolute; inset: 0; pointer-events: none;">
-                        {#each lugares as l}
-                            <circle cx={l.x} cy={l.y} r="2.5" fill="white" stroke="#000" stroke-width="0.5" />
-                        {/each}
-                    </svg>
+            <div class="action-box">
+                <hr/>
+                <div class="stats">
+                    <p>Zonas Mapeadas: <strong>{Object.keys(configZonas).length}</strong></p>
+                    <p>Cadeiras Ativas: <strong>{lugares.filter(l => l.visivel).length}</strong></p>
+                </div>
+                <form method="POST" action="?/guardarLugares" use:enhance>
+                    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
+                    <input type="hidden" name="config_zonas" value={JSON.stringify(configZonas)} />
+                    <input type="hidden" name="sala" value={salaSelecionada} />
+                    <button type="submit" class="btn-save-all">💾 PUBLICAR MAPA FINAL</button>
+                </form>
+                <button class="btn-clear" onclick={() => { if(confirm('Limpar tudo?')) lugares = [] }}>Limpar Desenho</button>
+            </div>
+        {/if}
+    </aside>
+
+    <main class="viewport">
+        {#if salaSelecionada}
+            {@const s = data.salas.find(x => x.nome_sala === salaSelecionada)}
+            <div class="macro-card">
+                <p class="instruction">Clique numa zona para editar a planta técnica</p>
+                <div class="svg-main" onclick={selecionarZona} aria-hidden="true">
+                    {@html s.svg_code}
                 </div>
             </div>
+        {:else}
+            <div class="empty-msg">Selecione uma sala no menu lateral.</div>
         {/if}
     </main>
 </div>
 
 {#if modalAberto}
-<div class="modal-backdrop">
-    <div class="modal">
-        <header class="modal-header">
-            <div class="info">
-                <h3>Edição: Zona</h3>
-                <div class="zona-input-wrapper">
-                    <label for="nome-zona">Nome:</label>
-                    <input id="nome-zona" type="text" bind:value={zonaSelecionada} placeholder="Ex: Plateia A" />
+    <div class="blueprint-overlay">
+        <div class="blueprint-window">
+            <header class="blueprint-header">
+                <div class="title-edit">
+                    <label>NOME DO SETOR / ZONA</label>
+                    <input type="text" bind:value={zonaAtiva.nome} placeholder="Ex: Plateia A" />
                 </div>
-            </div>
-            <div class="tools">
-                <input type="number" bind:value={qtdLugares} />
-                <button class="btn-gen" on:click={() => processarFila(pontosGuia)} disabled={pontosGuia.length < 2 || !zonaSelecionada}>Gerar</button>
-                <button class="btn-stamp" on:click={carimbarFila} disabled={ultimaCurva.length === 0}>+ Fila</button>
-                <button class="btn-undo" on:click={desfazer} disabled={contadorPassos === 0}>Desfazer</button>
-                <button class="btn-clear" on:click={limparZonaAtual} style="background: #ef4444; color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer;">
-                    Limpar Zona 
-                </button>
-            </div>
-        </header>
+                <button class="close-x" onclick={() => modalAberto = false}>&times;</button>
+            </header>
 
-        <div class="modal-scroll-area">
-            <div class="modal-body">
-                <div class="svg-layers">
-                    <div class="svg-background">{@html svgZonaHtml}</div>
-                   <svg class="draw-overlay" viewBox={viewBoxAtiva} on:mousedown={handleModalInteraction} on:contextmenu|preventDefault role="application">
-                        {#if pontosGuia.length >= 2}
-                            {@const p0 = pontosGuia[0]}
-                            {@const p2 = pontosGuia[pontosGuia.length - 1]}
-                            {@const p1 = pontosGuia.length === 3 
-                                ? { x: 2 * pontosGuia[1].x - 0.5 * p0.x - 0.5 * p2.x, y: 2 * pontosGuia[1].y - 0.5 * p0.y - 0.5 * p2.y } 
-                                : { x: (p0.x + p2.x) / 2, y: (p0.y + p2.y) / 2 }
-                            }
-                            <path d="M {p0.x} {p0.y} Q {p1.x} {p1.y} {p2.x} {p2.y}" fill="none" stroke="#00d2ff" stroke-width="1.5" stroke-dasharray="4" opacity="0.6" />
-                        {/if}
-                        {#each pontosGuia as p}<circle cx={p.x} cy={p.y} r={RAIO_BOLA} fill="#00d2ff" stroke="#fff" stroke-width="1.5" />{/each}
-                        {#each lugares.filter(l => zonaSelecionada && l.zona.toString().trim().toLowerCase() === zonaSelecionada.toString().trim().toLowerCase()) as l}
-                            <g>
-                                <circle cx={l.x} cy={l.y} r={RAIO_BOLA} fill="#e94560" stroke="#fff" stroke-width="0.8" />
-                                <text x={l.x} y={l.y - (RAIO_BOLA + 2)} font-size="6" text-anchor="middle" fill="#fff" font-weight="bold" class="seat-label">{l.fila}{l.num}</text>
-                            </g>
-                        {/each}
-                    </svg>
-                </div>
+            <div class="blueprint-body">
+                <aside class="blueprint-controls">
+                    <div class="control-group">
+                        <label>ESTRUTURA (F x C)</label>
+                        <div class="input-row">
+                            <input type="number" bind:value={config.filas} />
+                            <input type="number" bind:value={config.cols} />
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>ESPAÇAMENTO</label>
+                        <input type="number" bind:value={config.espacamento} />
+                    </div>
+
+                    <div class="control-group">
+                        <label>SÉRIE INICIAL</label>
+                        <div class="input-row">
+                            <input type="text" bind:value={config.letraInicial} maxlength="1" />
+                            <input type="number" bind:value={config.numInicial} />
+                        </div>
+                    </div>
+
+                    <button class="btn-apply" onclick={gerarGrelhaNoBlueprint}>
+                        {configZonas[zonaAtiva.id] ? 'REGERAR GRELHA' : 'GERAR GRELHA'}
+                    </button>
+
+                    <div class="divider"></div>
+
+                    <button class="btn-confirm-zone" onclick={fecharESalvarZona}>
+                        GUARDAR CONFIGURAÇÃO
+                    </button>
+                </aside>
+
+                <section class="blueprint-canvas">
+                    <div class="canvas-paper">
+                        <svg width="100%" height="100%">
+                            {#each Array(config.filas || 0) as _, f}
+                                <text x="40" y={80 + (f * (config.espacamento || 0)) + 5} class="fixed-row-label">
+                                    {String.fromCharCode((config.letraInicial || 'A').charCodeAt(0) + f)}
+                                </text>
+                            {/each}
+
+                            {#each lugares.filter(l => l.zona === zonaAtiva.id) as lug}
+                                <g onclick={() => alternarVisibilidade(lug.id)} class="seat-g">
+                                    <circle 
+                                        cx={lug.x} cy={lug.y} r="12" 
+                                        fill={lug.visivel ? "#10b981" : "transparent"} 
+                                        stroke={lug.visivel ? "#059669" : "#334155"}
+                                        stroke-dasharray={lug.visivel ? "0" : "2"}
+                                    />
+                                    {#if lug.visivel}
+                                        <text x={lug.x} y={lug.y + 4} class="seat-text">{lug.num}</text>
+                                    {/if}
+                                </g>
+                            {/each}
+                        </svg>
+                    </div>
+                </section>
             </div>
         </div>
-        <footer class="modal-footer">
-            <button class="btn-close" on:click={fecharModal}>Concluir Zona</button>
-        </footer>
     </div>
-</div>
 {/if}
 
-    {#if showToast}
-        <div class="toast">
-            Desenho guardado com sucesso!
-        </div>
-    {/if}
-
 <style>
-    .admin-container { display: flex; height: 100vh; background: #0f172a; color: #fff; }
-    .sidebar { width: 300px; background: #1e293b; padding: 25px; border-right: 1px solid #334155; }
-    .editor-main { flex: 1; display: flex; justify-content: center; align-items: center; background: #020617; overflow: auto; }
-    .canvas-view { background: #fff; padding: 20px; border-radius: 12px; width: 580px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .svg-container { position: relative; width: 100%; }
-    .global-overlay { position: absolute; inset: 0; pointer-events: none; }
-    .btn-new-room { width: 100%; background: #3b82f6; color: white; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin: 15px 0; }
-    hr { border: 0; border-top: 1px solid #334155; margin: 20px 0; }
-    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(8px); }
-    .modal { background: #1e293b; border-radius: 20px; width: 95%; max-width: 1100px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
-    .modal-header { padding: 20px 30px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-    .zona-input-wrapper { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
-    .zona-input-wrapper input { background: #0f172a; border: 1px solid #e94560; color: #fff; padding: 5px 10px; border-radius: 5px; width: 150px; }
-    .modal-scroll-area { flex: 1; overflow-y: auto; padding: 20px; }
-    .modal-body { position: relative; height: 600px; background: #fff; border-radius: 12px; overflow: hidden; }
-    .svg-layers { position: relative; width: 100%; height: 100%; }
-    .svg-background { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: flex; justify-content: center; }
-    .draw-overlay { position: absolute; inset: 0; z-index: 20; width: 100%; height: 100%; cursor: crosshair; }
-    .btn-gen { background: #e94560; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    .btn-stamp { background: #3b82f6; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-    .btn-undo { background: #f59e0b; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
-    .btn-save { width: 100%; background: #10b981; color: white; padding: 12px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; margin-top: 15px; }
-    .btn-close { width: 100%; background: #475569; color: #fff; border: none; padding: 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
-    input[type="number"] { width: 70px; padding: 8px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 8px; }
-    .seat-label { pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+    :global(body) { margin: 0; background: #020617; color: white; font-family: 'Inter', sans-serif; }
+    .admin-container { display: flex; height: 100vh; }
+    
+    .sidebar { width: 320px; background: #1e293b; padding: 2rem; border-right: 1px solid #334155; display: flex; flex-direction: column; }
+    h2 { font-size: 1.4rem; color: #10b981; margin-bottom: 2rem; letter-spacing: -0.5px; }
+    
+    label { font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 6px; display: block; }
+    select, input { width: 100%; padding: 0.7rem; background: #020617; border: 1px solid #334155; color: white; border-radius: 8px; outline: none; }
+    select:focus, input:focus { border-color: #3b82f6; }
 
-    .toast {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #10b981;
-        color: white;
-        padding: 15px 25px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        z-index: 10000;
-        animation: slideIn 0.3s ease-out;
-    }
-    @keyframes slideIn {
-        from { transform: translateX(100%); }
-        to { transform: translateX(0); }
-    }
+    .btn-create-room { background: #3b82f6; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 1rem; width: 100%; }
+    .btn-save-all { background: #10b981; color: white; border: none; padding: 1rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 1rem; }
+    .btn-clear { background: transparent; color: #ef4444; border: 1px solid #ef4444; padding: 0.6rem; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; font-size: 0.8rem; }
 
-    .toast-notification {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background: #10b981;
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        font-weight: bold;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-        z-index: 99999;
-        animation: slideIn 0.3s ease-out;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+    .viewport { flex: 1; display: flex; justify-content: center; align-items: center; background: #020617; }
+    .macro-card { background: white; padding: 2.5rem; border-radius: 1.5rem; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+    .instruction { color: #64748b; font-size: 0.8rem; text-align: center; margin-bottom: 1.5rem; }
+    :global(.svg-main svg) { height: 65vh; width: auto; cursor: crosshair; }
 
-    @keyframes slideIn {
-        from {
-            transform: translateY(100px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
+    /* Modal Estúdio */
+    .blueprint-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+    .blueprint-window { background: #0f172a; width: 95vw; height: 92vh; border-radius: 1rem; display: flex; flex-direction: column; border: 1px solid #334155; overflow: hidden; }
+    .blueprint-header { padding: 1.5rem 2.5rem; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .title-edit input { background: #020617; width: 380px; font-size: 1.1rem; border-color: #3b82f6; color: #fff; }
+
+    .blueprint-body { display: flex; flex: 1; overflow: hidden; }
+    .blueprint-controls { width: 300px; padding: 2rem; background: #1e293b; border-right: 1px solid #334155; }
+    .blueprint-canvas { flex: 1; padding: 2rem; background: #020617; display: flex; align-items: center; justify-content: center; }
+    .canvas-paper { background: #0f172a; width: 100%; height: 100%; border-radius: 0.5rem; border: 1px solid #334155; overflow: auto; position: relative; box-shadow: inset 0 0 40px rgba(0,0,0,0.5); }
+
+    .seat-g { cursor: pointer; }
+    .seat-text { font-size: 10px; text-anchor: middle; fill: white; font-weight: bold; pointer-events: none; }
+    .fixed-row-label { font-size: 14px; font-weight: 900; fill: #475569; text-anchor: middle; }
+
+    .btn-apply { background: #3b82f6; color: white; width: 100%; padding: 0.8rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 1rem; }
+    .btn-confirm-zone { background: #10b981; color: white; width: 100%; padding: 1.2rem; border: none; border-radius: 8px; cursor: pointer; font-weight: 800; }
+    
+    .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .control-group { margin-bottom: 1.5rem; }
+    .divider { height: 1px; background: #334155; margin: 1.5rem 0; }
+    .close-x { font-size: 2.5rem; background: none; border: none; cursor: pointer; color: #94a3b8; }
+    .empty-msg { color: #64748b; font-style: italic; }
 </style>

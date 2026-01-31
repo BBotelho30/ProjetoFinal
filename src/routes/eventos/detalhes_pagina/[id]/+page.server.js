@@ -2,20 +2,26 @@
 import { query } from '$lib/db';
 import { error } from '@sveltejs/kit';
 
-export async function load({ params }) {
-    // Usamos params.id porque a pasta se chama [id]
+/** @type {import('./$types').PageServerLoad} */
+export const load = async ({ params }) => {
     const id = params.id; 
 
-    try {
-        //Procura os dados do evento principal
-        const eventoReq = await query('SELECT * FROM Eventos WHERE id_eventos = ?', [id]);
-        const evento = eventoReq[0];
+    // Validação básica do ID
+    if (!id || id === 'undefined') {
+        throw error(400, 'ID do evento inválido ou não fornecido');
+    }
 
-        if (!evento) {
-            throw error(404, 'Evento não encontrado');
+    try {
+        // 1. Procurar os dados do evento principal
+        const eventoReq = await query('SELECT * FROM Eventos WHERE id_eventos = ?', [id]);
+        
+        if (!eventoReq || eventoReq.length === 0) {
+            throw error(404, 'Evento não encontrado na base de dados');
         }
 
-        // Procura as sessões com JOIN para obter o nome da sala
+        const evento = eventoReq[0];
+
+        // 2. Procurar as sessões associadas
         const sessoes = await query(`
             SELECT es.*, s.nome_sala 
             FROM Eventos_Sala es
@@ -24,12 +30,24 @@ export async function load({ params }) {
             ORDER BY es.data_espectaculo ASC, es.hora_inicio ASC
         `, [id]);
 
+        // Retornar os dados (usamos JSON.stringify/parse para garantir a serialização limpa de datas do MySQL)
         return {
             evento: JSON.parse(JSON.stringify(evento)),
             sessoes: JSON.parse(JSON.stringify(sessoes))
         };
+
     } catch (err) {
-        console.error('Erro ao carregar detalhes:', err);
-        throw error(500, 'Erro ao carregar os dados do evento');
+        // CORREÇÃO AQUI:
+        // Se o erro já for um erro disparado pelo SvelteKit (como o 404 acima), 
+        // ele terá uma propriedade 'status'. Se tiver, deixamos o SvelteKit lidar com ele.
+        if (err && typeof err === 'object' && 'status' in err) {
+            throw err;
+        }
+
+        console.error('ERRO CRÍTICO NO SERVIDOR:', err);
+        throw error(500, {
+            message: 'Erro interno ao carregar os dados do evento.',
+            detail: err.message
+        });
     }
-}
+};

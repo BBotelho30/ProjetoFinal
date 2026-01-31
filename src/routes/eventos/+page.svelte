@@ -47,8 +47,10 @@
     const formatarTexto = (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase();
 
     function comprar(id) {
+
     goto(`/eventos/detalhes_pagina/${id}`);
 }
+
 
 </script>
 

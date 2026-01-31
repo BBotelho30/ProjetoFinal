@@ -1,17 +1,30 @@
 <script lang="ts">
     // @ts-nocheck
+    import { goto } from '$app/navigation';
+    import { adicionarAoCarrinho } from '$lib/cartStore';
+
     export let data;
     const { sessao, lugares } = data;
-    const dataEvento = new Date(sessao.data_espectaculo);
 
+    // Data do evento
+    const dataEvento = new Date(sessao.data_espectaculo);
     const dia = dataEvento.toLocaleDateString('pt-PT', { day: '2-digit' });
-    const mes = dataEvento
-        .toLocaleDateString('pt-PT', { month: 'short' })
-        .toUpperCase();
+    const mes = dataEvento.toLocaleDateString('pt-PT', { month: 'short' }).toUpperCase();
     const ano = dataEvento.getFullYear();
 
+    // Estado
     let lugarSelecionado = [];
+    let lugarHover = null;
+    let mX = 0;
+    let mY = 0;
 
+    // Total
+    $: precoTotal = lugarSelecionado.reduce(
+        (acc, l) => acc + Number(l.preco || 0),
+        0
+    );
+
+    // Selecionar / remover lugar
     function selecionarLugar(lugar) {
         const index = lugarSelecionado.findIndex(
             l => l.id_lugar === lugar.id_lugar
@@ -25,15 +38,41 @@
             );
         }
     }
-</script>
 
+    // Mouse (tooltip)
+    function handleMouseMove(e) {
+        mX = e.clientX;
+        mY = e.clientY;
+    }
+
+    // Enviar para carrinho
+    function finalizarSelecao() {
+        if (lugarSelecionado.length === 0) return;
+
+        lugarSelecionado.forEach(lugar => {
+            adicionarAoCarrinho({
+                id_lugar: lugar.id_lugar,
+                id_sessao: sessao.id_sessao,
+                nome_evento: sessao.nome_evento,
+                nome_sala: sessao.nome_sala,
+                data: sessao.data_espectaculo,
+                hora: sessao.hora_inicio,
+                fila: lugar.fila,
+                num: lugar.num,
+                preco: lugar.preco,
+                zona: lugar.zona,
+                imagem: sessao.imagem_cartaz
+            });
+        });
+
+        goto('/carrinho');
+    }
+</script>
 <div class="checkout-page">
 
+    <!-- HEADER -->
     <header class="event-header">
-
         <div class="poster-wrapper">
-
-            <!-- DATA / HORA -->
             <div class="date-card">
                 <span class="date-month">{mes}</span>
                 <span class="date-day">{dia}</span>
@@ -41,41 +80,29 @@
                 <span class="date-hour">{sessao.hora_inicio.slice(0, 5)}</span>
             </div>
 
-
-
-            <!-- CARTAZ -->
             <img
                 src={sessao.imagem_cartaz || '/placeholder.jpg'}
                 alt={sessao.nome_evento}
                 class="event-poster"
             />
-
         </div>
-
 
         <div class="event-info">
             <h1>{sessao.nome_evento}</h1>
-
-            <div class="event-meta">
-                <span class="event-sala">
-                    {sessao.nome_sala}
-                </span>
-            </div>
+            <span class="event-sala">{sessao.nome_sala}</span>
         </div>
 
         <button class="close-btn" on:click={() => window.history.back()}>
             &times;
         </button>
-
     </header>
-
 
     <!-- CONTEÚDO -->
     <main class="content-grid">
 
         <!-- MAPA -->
         <section class="map-area">
-            <div class="svg-wrapper">
+            <div class="svg-wrapper" on:mousemove={handleMouseMove}>
                 <div class="room-svg">
                     {@html sessao.svg_code}
                 </div>
@@ -89,31 +116,35 @@
                             class="seat"
                             class:selected={lugarSelecionado.some(sel => sel.id_lugar === l.id_lugar)}
                             on:click={() => selecionarLugar(l)}
+                            on:mouseenter={() => lugarHover = l}
+                            on:mouseleave={() => lugarHover = null}
                         >
                             <title>Fila {l.fila}, Lugar {l.num}</title>
                         </circle>
                     {/each}
                 </svg>
+
+                {#if lugarHover}
+                    <div
+                        class="price-tooltip follow-mouse"
+                        style:top="{mY - 60}px"
+                        style:left="{mX + 15}px"
+                    >
+                        <span class="zona-name">{lugarHover.zona}</span>
+                        <span class="zona-price">{lugarHover.preco}€</span>
+                    </div>
+                {/if}
             </div>
         </section>
 
         <!-- PAINEL LATERAL -->
         <aside class="side-panel">
-
             <div class="panel-block">
                 <h3>Zonas</h3>
                 <ul class="zone-list">
                     <li><span class="dot green"></span> Plateia</li>
                     <li><span class="dot blue"></span> Balcão</li>
                     <li><span class="dot gray"></span> Indisponível</li>
-                </ul>
-            </div>
-
-            <div class="panel-block">
-                <h3>Legenda</h3>
-                <ul class="zone-list">
-                    <li><span class="dot green"></span> Disponível</li>
-                    <li><span class="dot selected"></span> Selecionado</li>
                 </ul>
             </div>
 
@@ -127,17 +158,25 @@
                     </strong>
                 {/if}
             </div>
-
         </aside>
 
     </main>
 
-    <!-- FOOTER FIXO -->
+    <!-- FOOTER -->
     {#if lugarSelecionado.length > 0}
         <div class="selection-footer">
-            <span>{lugarSelecionado.length} lugar(es) selecionado(s)</span>
-            <button class="confirm-btn">
-                Confirmar Reserva
+            <div class="info-text">
+                <p>
+                    {lugarSelecionado.length} Lugar(es) |
+                    <strong>Total: {precoTotal.toFixed(2)}€</strong>
+                </p>
+                <small>
+                    {lugarSelecionado.map(l => `${l.zona}: ${l.fila}${l.num}`).join(' | ')}
+                </small>
+            </div>
+
+            <button class="confirm-btn" on:click={finalizarSelecao}>
+                Pagar {precoTotal.toFixed(2)}€
             </button>
         </div>
     {/if}
@@ -434,9 +473,53 @@
         transition: 0.3s ease;
     }
 
-    .close-btn:hover {
-        color: #ff0000;
-        transform: rotate(90deg);
+
+    .price-tooltip.follow-mouse {
+        position: absolute; /* Obrigatório para as coordenadas funcionarem */
+        background: #3b82f6;
+        color: white;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        pointer-events: none; /* Evita que o tooltip "trema" ao tapar o lugar */
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        /* Removemos top e right fixos daqui */
+        transition: transform 0.1s ease-out; /* Suaviza o movimento */
+        white-space: nowrap;
+    }   
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .info-text strong {
+        color: #10b981;
+        font-size: 1.2rem;
+    }
+
+    .info-text small {
+        display: block;
+        color: #94a3b8;
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .zona-name {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    opacity: 0.9;
+    letter-spacing: 0.5px;
+    }
+
+    .zona-price {
+        font-size: 1.1rem;
     }
 
 
