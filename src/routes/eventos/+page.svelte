@@ -304,10 +304,18 @@
         right: 15px;
         background: var(--secondary-color); 
         color: #1a1a2e;
-        padding: 6px 15px; 
+        padding: 6px 16px; 
         border-radius: 50px; 
-        font-size: 1em; 
-        font-weight: bold;
+        font-size: 0.85em;
+        font-weight: 600;              
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        display: flex;                 
+        align-items: center;
+        justify-content: center;
+        text-shadow:
+        0.4px 0 0 currentColor,
+        -0.4px 0 0 currentColor;
     }
 
     .card-info { 

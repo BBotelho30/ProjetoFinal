@@ -24,6 +24,7 @@ export const load = async ({ params }) => {
             FROM Eventos_Sala es
             JOIN Sala s ON es.id_sala = s.id_sala
             WHERE es.id_eventos = ?
+                AND TIMESTAMP(es.data_espectaculo, es.hora_inicio) > NOW()
             ORDER BY es.data_espectaculo ASC, es.hora_inicio ASC
         `, [id]);
         

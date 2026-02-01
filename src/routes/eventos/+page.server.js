@@ -5,7 +5,13 @@ import { query } from '$lib/db';
 export async function load() {
     try {
         // 1️⃣ Buscar eventos
-        const eventos = await query(`SELECT * FROM Eventos`);
+        const eventos = await query(`
+            SELECT DISTINCT e.*
+                FROM Eventos e
+                JOIN Eventos_Sala es ON e.id_eventos = es.id_eventos
+                WHERE TIMESTAMP(es.data_espectaculo, es.hora_inicio) > NOW()
+                ORDER BY e.id_eventos DESC
+                `);
 
         // 2️⃣ Buscar sessões com nome da sala
         const sessoes = await query(`
@@ -18,7 +24,7 @@ export async function load() {
                 s.nome_sala
             FROM Eventos_Sala es
             JOIN Sala s ON es.id_sala = s.id_sala
-        `);
+            `);
 
         // 3️⃣ Agrupar sessões dentro dos eventos
         const mapa = {};

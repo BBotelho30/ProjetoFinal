@@ -12,6 +12,7 @@
         isSameDay, 
         addMonths, 
         subMonths,
+        isBefore,
         parseISO 
     } from 'date-fns';
 
@@ -20,6 +21,8 @@
 
     export let data;
     const { evento, sessoes } = data;
+    const hoje = new Date();
+    const inicioMesAtual = startOfMonth(hoje);
 
     let dataReferencia = new Date(); // Usamos um objeto Date único para controlar o mês/ano
     let diaSelecionado = null;
@@ -34,28 +37,38 @@
         };
     }
 
-    // Gera os dias do calendário de forma muito mais simples
+    // Gera os dias do calendário com base na data de referência
     function gerarCalendario(refDate) {
         const inicioMes = startOfMonth(refDate);
         const fimMes = endOfMonth(refDate);
-        
-        // Encontra o início da primeira semana e o fim da última (para preencher 42 dias)
+
         const dataInicio = startOfWeek(inicioMes, { weekStartsOn: 0 });
         const dataFim = endOfWeek(fimMes, { weekStartsOn: 0 });
+
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
 
         const dias = eachDayOfInterval({ start: dataInicio, end: dataFim });
 
         return dias.map(d => {
-            const temSessoes = sessoes.some(s => isSameDay(parseISO(s.data_espectaculo), d));
+            const temSessoes = sessoes.some(s =>
+                isSameDay(parseISO(s.data_espectaculo), d)
+            );
+
             return {
                 data: d,
                 diaNumero: format(d, 'd'),
-                ativo: temSessoes && isSameMonth(d, inicioMes),
+                ativo:
+                    temSessoes &&
+                    isSameMonth(d, inicioMes) &&
+                    d >= hoje,
+
                 isAtual: isSameMonth(d, inicioMes),
-                isHoje: isSameDay(d, new Date())
+                isHoje: isSameDay(d, hoje)
             };
         });
     }
+
 
     function selecionarDia(diaObj) {
         if (diaObj.ativo) {
@@ -69,10 +82,32 @@
     }
 
     function proximoMes() { dataReferencia = addMonths(dataReferencia, 1); diaSelecionado = null; }
-    function mesAnterior() { dataReferencia = subMonths(dataReferencia, 1); diaSelecionado = null; }
+    function mesAnterior() {
+        const anterior = subMonths(dataReferencia, 1);
+
+        if (
+            anterior.getFullYear() < hoje.getFullYear() ||
+            (anterior.getFullYear() === hoje.getFullYear() &&
+            anterior.getMonth() < hoje.getMonth())
+        ) {
+            return; // ❌ bloqueia
+        }
+
+        dataReferencia = anterior;
+        diaSelecionado = null;
+    }
+
     function voltar() { window.history.back(); }
 
     function irParaCompra(sessao) {
+        const agora = new Date();
+        const dataSessao = new Date(`${sessao.data_espectaculo}T${sessao.hora_inicio}`);
+
+        if (dataSessao <= agora) {
+            alert('Esta sessão já não está disponível.');
+            return;
+        }
+
         if (!$user) {
             goto('/autenticacao/login');
         } else {
@@ -81,12 +116,16 @@
     }
 
 
+
     const diasSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
     // Reatividade do Svelte
     $: diasCalendario = gerarCalendario(dataReferencia);
     $: nomeMesAtual = format(dataReferencia, 'MMMM yyyy', { locale: pt }).toUpperCase();
-
+    $: podeVoltarMes = !isBefore(
+        startOfMonth(subMonths(dataReferencia, 1)),
+        inicioMesAtual
+    );
     
 </script>
 
@@ -110,7 +149,7 @@
 
                 <div class="meta-info">
                     <p><strong>Classificação:</strong> M/06 anos</p>
-                    <p><strong>Duração:</strong> {sessoes[0]?.duracao || '--'} min. s/ intervalo</p>
+                    <p><strong>Duração:</strong> {sessoes[0]?.duracao || '--'} horas</p>
                 </div>
             </div>  
         </section>
@@ -120,10 +159,17 @@
             <!-- CALENDÁRIO -->
             <div class="calendar-container">
                 <div class="calendar-header">
-                    <button on:click={mesAnterior} class="nav-btn">&lt;</button>
+                    {#if podeVoltarMes}
+                        <button on:click={mesAnterior} class="nav-btn">&lt;</button>
+                    {:else}
+                        <div class="nav-btn placeholder"></div>
+                    {/if}
+
                     <h3>{nomeMesAtual}</h3>
+
                     <button on:click={proximoMes} class="nav-btn">&gt;</button>
                 </div>
+
 
                 <div class="calendar-weekdays">
                     {#each diasSemana as dia}
@@ -190,12 +236,6 @@
             </p>
         </section>
 
-        <section class="multimedia-section">
-            <h2>Multimédia</h2>
-            <p class="multimedia-text">
-                {evento.multimedia || 'Sem multimédia disponível.'}
-            </p>
-        </section>
     </div>
 </main>
 
@@ -214,15 +254,20 @@
 
     .hero-section {
         min-height: 100vh;
-        background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+        background: linear-gradient(
+            45deg,
+            var(--background-dark),
+            var(--primary-color)
+        );
         display: flex;
         justify-content: center;
         align-items: center;
         padding: 20px;
     }
 
+
     .form-container {
-        background: linear-gradient(135deg, rgba(30, 45, 65, 0.98), rgba(22, 33, 62, 0.98));
+        background: rgba(22, 33, 62, 0.96);
         padding: 40px;
         border-radius: 15px;
         width: 100%;
@@ -269,13 +314,13 @@
     .category-tag { 
         display: inline-block;
         background: #ff0000;
-        padding: 5px 13px;
-        font-size: 0.85em;
+        padding: 4px 12px;
+        font-size: 0.8em;
         font-weight: bold;
         color: #1a1a1a;
         border-radius: 6px;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
     }
 
     .main-details {
@@ -318,29 +363,6 @@
         max-width: 100%;
     }
 
-    /*multimédia*/
-    .multimedia-section {
-        margin-top: 60px;
-        padding-top: 10px;
-        border-top: 2px solid rgba(255, 255, 255, 0.15);
-    }
-
-    .multimedia-section h2 {
-        font-size: 1.8em;
-        margin-bottom: 10px;
-        color: white;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .multimedia-text {
-        font-size: 1.1em;
-        line-height: 1.8;
-        color: #cbd5e1;
-        white-space: pre-line;
-        max-width: 100%;
-    }
-
 
     .session-item {
         display: flex;
@@ -350,6 +372,11 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
         gap: 20px;
     }
+
+    .nav-btn.placeholder {
+        visibility: hidden;
+    }
+
 
     .calendar-card {
         display: flex;
