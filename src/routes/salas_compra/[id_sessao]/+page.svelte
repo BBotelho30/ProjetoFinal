@@ -3,74 +3,83 @@
     import { goto } from '$app/navigation';
     import { adicionarAoCarrinho } from '$lib/cartStore';
 
-    export let data;
-    const { sessao, lugares } = data;
+    // Svelte 5: Receber props
+    let { data } = $props();
 
-    // Data do evento
-    const dataEvento = new Date(sessao.data_espectaculo);
-    const dia = dataEvento.toLocaleDateString('pt-PT', { day: '2-digit' });
-    const mes = dataEvento.toLocaleDateString('pt-PT', { month: 'short' }).toUpperCase();
-    const ano = dataEvento.getFullYear();
+    // Svelte 5: Valores derivados
+    const sessao = $derived(data.sessao);
+    const lugares = $derived(data.lugares);
 
-    // Estado
-    let lugarSelecionado = [];
-    let lugarHover = null;
-    let mX = 0;
-    let mY = 0;
+    const dataEvento = $derived(new Date(sessao.data_espectaculo));
+    const dia = $derived(dataEvento.toLocaleDateString('pt-PT', { day: '2-digit' }));
+    const mes = $derived(dataEvento.toLocaleDateString('pt-PT', { month: 'short' }).toUpperCase());
+    const ano = $derived(dataEvento.getFullYear());
 
-    // Total
-    $: precoTotal = lugarSelecionado.reduce(
-        (acc, l) => acc + Number(l.preco || 0),
-        0
-    );
+    // Estados Reativos ($state)
+    let lugarSelecionado = $state([]);
+    let modalZonaAberto = $state(false);
+    let zonaSelecionadaInfo = $state(null);
+    let mX = $state(0);
+    let mY = $state(0);
+    let lugarHover = $state(null);
 
-    // Selecionar / remover lugar
+    // Total derivado
+    let precoTotal = $derived(lugarSelecionado.reduce((acc, l) => acc + Number(l.preco || 0), 0));
+
     function selecionarLugar(lugar) {
-        const index = lugarSelecionado.findIndex(
-            l => l.id_lugar === lugar.id_lugar
-        );
-
+        const index = lugarSelecionado.findIndex(l => l.id_lugar === lugar.id_lugar);
         if (index === -1) {
             lugarSelecionado = [...lugarSelecionado, lugar];
         } else {
-            lugarSelecionado = lugarSelecionado.filter(
-                l => l.id_lugar !== lugar.id_lugar
-            );
+            lugarSelecionado = lugarSelecionado.filter(l => l.id_lugar !== lugar.id_lugar);
         }
     }
 
-    // Mouse (tooltip)
+    function abrirZoomZona(event) {
+        const target = event.target.closest('path, polygon, rect');
+        if (!target) return;
+
+        const bbox = target.getBBox();
+        const techId = target.id || `z-${Math.floor(bbox.x)}-${Math.floor(bbox.y)}`;
+        
+        const lugaresDaZona = lugares.filter(l => {
+            const cfg = typeof l.config_tecnica === 'string' ? JSON.parse(l.config_tecnica) : l.config_tecnica;
+            return cfg?.idTecnico === techId || l.zona === techId;
+        });
+
+        if (lugaresDaZona.length > 0) {
+            zonaSelecionadaInfo = { nome: lugaresDaZona[0].zona, lugares: lugaresDaZona };
+            modalZonaAberto = true;
+        }
+    }
+
+function finalizarSelecao() {
+        if (lugarSelecionado.length === 0) return;
+        
+        lugarSelecionado.forEach(l => {
+            adicionarAoCarrinho({
+                id_lugar: l.id_lugar, 
+                id_evento: sessao.id_eventos, // Usar o ID do evento da BD
+                id_sala: sessao.id_sala,
+                nome_evento: sessao.nome_evento, 
+                nome_sala: sessao.nome_sala,
+                fila: l.fila, 
+                num: l.num, 
+                preco: l.preco, 
+                zona: l.zona, 
+                imagem: sessao.imagem_cartaz
+            });
+        });
+        goto('/carrinho');
+    }
+
     function handleMouseMove(e) {
         mX = e.clientX;
         mY = e.clientY;
     }
-
-    // Enviar para carrinho
-    function finalizarSelecao() {
-        if (lugarSelecionado.length === 0) return;
-
-        lugarSelecionado.forEach(lugar => {
-            adicionarAoCarrinho({
-                id_lugar: lugar.id_lugar,
-                id_sessao: sessao.id_sessao,
-                nome_evento: sessao.nome_evento,
-                nome_sala: sessao.nome_sala,
-                data: sessao.data_espectaculo,
-                hora: sessao.hora_inicio,
-                fila: lugar.fila,
-                num: lugar.num,
-                preco: lugar.preco,
-                zona: lugar.zona,
-                imagem: sessao.imagem_cartaz
-            });
-        });
-
-        goto('/carrinho');
-    }
 </script>
-<div class="checkout-page">
 
-    <!-- HEADER -->
+<div class="checkout-page" onmousemove={handleMouseMove} role="presentation">
     <header class="event-header">
         <div class="poster-wrapper">
             <div class="date-card">
@@ -79,362 +88,292 @@
                 <span class="date-year">{ano}</span>
                 <span class="date-hour">{sessao.hora_inicio.slice(0, 5)}</span>
             </div>
-
-            <img
-                src={sessao.imagem_cartaz || '/placeholder.jpg'}
-                alt={sessao.nome_evento}
-                class="event-poster"
-            />
+            <img src={sessao.imagem_cartaz} alt={sessao.nome_evento} class="event-poster" />
         </div>
-
         <div class="event-info">
             <h1>{sessao.nome_evento}</h1>
             <span class="event-sala">{sessao.nome_sala}</span>
         </div>
-
-        <button class="close-btn" on:click={() => window.history.back()}>
-            &times;
-        </button>
+        <button class="close-btn" onclick={() => window.history.back()}>&times;</button>
     </header>
 
-    <!-- CONTEÚDO -->
     <main class="content-grid">
-
-        <!-- MAPA -->
         <section class="map-area">
-            <div class="svg-wrapper" on:mousemove={handleMouseMove}>
-                <div class="room-svg">
-                    {@html sessao.svg_code}
-                </div>
-
-                <svg class="places-overlay" viewBox="0 0 595.28 841.89">
-                    {#each lugares as l}
-                        <circle
-                            cx={l.x}
-                            cy={l.y}
-                            r="5"
-                            class="seat"
-                            class:selected={lugarSelecionado.some(sel => sel.id_lugar === l.id_lugar)}
-                            on:click={() => selecionarLugar(l)}
-                            on:mouseenter={() => lugarHover = l}
-                            on:mouseleave={() => lugarHover = null}
-                        >
-                            <title>Fila {l.fila}, Lugar {l.num}</title>
-                        </circle>
-                    {/each}
-                </svg>
-
-                {#if lugarHover}
-                    <div
-                        class="price-tooltip follow-mouse"
-                        style:top="{mY - 60}px"
-                        style:left="{mX + 15}px"
-                    >
-                        <span class="zona-name">{lugarHover.zona}</span>
-                        <span class="zona-price">{lugarHover.preco}€</span>
-                    </div>
-                {/if}
+            <div class="room-svg" onclick={abrirZoomZona} aria-hidden="true">
+                {@html sessao.svg_code}
             </div>
+            <p class="map-hint">Clique numa zona para escolher os lugares</p>
         </section>
 
-        <!-- PAINEL LATERAL -->
         <aside class="side-panel">
-            <div class="panel-block">
-                <h3>Zonas</h3>
-                <ul class="zone-list">
-                    <li><span class="dot green"></span> Plateia</li>
-                    <li><span class="dot blue"></span> Balcão</li>
-                    <li><span class="dot gray"></span> Indisponível</li>
-                </ul>
-            </div>
-
             <div class="panel-block resumo">
-                <h3>Selecionados</h3>
-                {#if lugarSelecionado.length === 0}
-                    <p>Nenhum lugar selecionado</p>
+                <h3>Lugares Selecionados</h3>
+                {#each lugarSelecionado as l}
+                    <div class="ticket-mini">
+                        <span>{l.zona} • Fila {l.fila}, {l.num}</span>
+                        <strong>{l.preco}€</strong>
+                    </div>
                 {:else}
-                    <strong>
-                        {lugarSelecionado.map(l => `${l.fila}${l.num}`).join(', ')}
-                    </strong>
-                {/if}
+                    <p class="empty-text">Nenhum lugar escolhido</p>
+                {/each}
             </div>
         </aside>
-
     </main>
 
-    <!-- FOOTER -->
     {#if lugarSelecionado.length > 0}
         <div class="selection-footer">
-            <div class="info-text">
-                <p>
-                    {lugarSelecionado.length} Lugar(es) |
-                    <strong>Total: {precoTotal.toFixed(2)}€</strong>
-                </p>
-                <small>
-                    {lugarSelecionado.map(l => `${l.zona}: ${l.fila}${l.num}`).join(' | ')}
-                </small>
+            <div class="footer-info">
+                <span>{lugarSelecionado.length} Bilhetes</span>
+                <strong>Total: {precoTotal.toFixed(2)}€</strong>
             </div>
-
-            <button class="confirm-btn" on:click={finalizarSelecao}>
-                Pagar {precoTotal.toFixed(2)}€
-            </button>
+            <button class="confirm-btn" onclick={finalizarSelecao}>FINALIZAR COMPRA</button>
         </div>
     {/if}
-
 </div>
 
-<style>
+{#if modalZonaAberto && zonaSelecionadaInfo}
+    <div class="blueprint-overlay">
+        <div class="blueprint-window">
+            <header class="blueprint-header">
+                <h2>{zonaSelecionadaInfo.nome}</h2>
+                <button class="close-x" onclick={() => modalZonaAberto = false}>&times;</button>
+            </header>
+            <div class="blueprint-body">
+                <div class="canvas-paper">
+                    <svg width="100%" height="100%" viewBox="0 0 1000 800">
+                        {#each zonaSelecionadaInfo.lugares as l}
+                            <g class="seat-g" class:occupied={l.estado === 'ocupado'} 
+                               onclick={() => l.estado !== 'ocupado' && selecionarLugar(l)}
+                               onmouseenter={() => lugarHover = l} onmouseleave={() => lugarHover = null}>
+                                <circle cx={l.x} cy={l.y} r="15" 
+                                    class="seat" 
+                                    class:selected={lugarSelecionado.some(sel => sel.id_lugar === l.id_lugar)} />
+                                <text x={l.x} y={l.y + 5} class="seat-label">{l.num}</text>
+                            </g>
+                        {/each}
+                    </svg>
+                    {#if lugarHover}
+                        <div class="tooltip" style="top:{mY - 80}px; left:{mX}px">
+                            {lugarHover.fila}{lugarHover.num} • {lugarHover.preco}€
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    </div>
+{/if}
 
+<style>
+    .checkout-page { min-height: 100vh; background: var(--bg); padding: 40px; color: white; padding-top: 120px; }
+    
+    .event-header { display: flex; align-items: center; gap: 30px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px; border: 1px solid #334155; position: relative; max-width: 1200px; margin: 0 auto; }
+    .date-card { background: white; color: #1e293b; padding: 5px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; width: 60px; overflow: hidden; }
+    .date-month { background: #ef4444; color: white; font-size: 0.7rem; font-weight: bold; padding: 2px 0; }
+    .date-day { font-size: 1.5rem; font-weight: 800; }
+    .event-poster { height: 100px; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+    .event-info h1 { margin: 0; font-size: 1.8rem; color: var(--accent); }
+    .event-sala { color: #94a3b8; font-size: 0.9rem; }
+
+    .content-grid { display: grid; grid-template-columns: 1fr 350px; gap: 30px; max-width: 1200px; margin: 40px auto; }
+    .map-area { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    :global(.room-svg svg) { width: 100%; height: auto; cursor: crosshair; }
+    .map-hint { color: #64748b; text-align: center; font-size: 0.8rem; margin-top: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+
+    .side-panel { background: var(--card); padding: 25px; border-radius: 24px; border: 1px solid #334155; }
+    .ticket-mini { background: #0f172a; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; border-left: 4px solid var(--accent); }
+
+    .blueprint-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .blueprint-window { background: #0f172a; width: 90vw; height: 85vh; border-radius: 24px; border: 1px solid #334155; display: flex; flex-direction: column; }
+    .blueprint-header { padding: 20px 40px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+    .canvas-paper { flex: 1; position: relative; overflow: auto; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; }
+
+    .seat { fill: #10b981; transition: 0.2s; cursor: pointer; stroke: #0f172a; stroke-width: 2; }
+    .seat:hover { fill: var(--accent); r: 18; }
+    .seat.selected { fill: #f59e0b; r: 18; stroke: white; }
+    .seat-g.occupied { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
+    .seat-label { fill: white; font-size: 10px; font-weight: bold; text-anchor: middle; pointer-events: none; }
+    
+    .selection-footer { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10b981; padding: 12px 40px; border-radius: 50px; display: flex; gap: 40px; align-items: center; box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4); z-index: 100; }
+    .confirm-btn { background: white; color: #065f46; border: none; padding: 12px 30px; border-radius: 25px; font-weight: 800; cursor: pointer; transition: 0.3s; }
+    .confirm-btn:hover { transform: scale(1.05); background: #f0fdf4; }
+
+    .tooltip { position: fixed; background: var(--accent); color: #020617; padding: 6px 15px; border-radius: 8px; font-weight: 800; pointer-events: none; z-index: 3000; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+    .close-btn, .close-x { background: none; border: none; color: white; font-size: 2.5rem; cursor: pointer; opacity: 0.6; transition: 0.2s; }
+    .close-btn:hover, .close-x:hover { opacity: 1; color: #ef4444; }
+
+ 
     :root {
         --primary-color: #0f3460;
         --secondary-color: #ff0000;
-        --background-dark: #1a1a2e;
-        --text-light: #e0e0e0;
-        --text-muted: #888;
-        --card-bg: #16213e;
+        --background-dark: #020617;
+        --card-bg: #1e293b;
+        --accent: #38bdf8;
     }
 
+    :global(body) {
+        margin: 0;
+        background: var(--background-dark);
+        color: #e5e7eb;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .checkout-page {
+        padding: 120px 30px 40px; /* Espaço para navbar e margens */
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #0f172a, #020617);
+    }
+
+    /* --- HEADER DO EVENTO (FUTURISTA) --- */
     .event-header {
-        max-width: 1300px;
+        max-width: 1200px;
         margin: 0 auto 35px;
         display: flex;
         gap: 25px;
         align-items: center;
-        background: linear-gradient(
-            135deg,
-            rgba(2,6,23,0.95),
-            rgba(15,23,42,0.95)
-        );
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
         padding: 20px 25px;
         border-radius: 22px;
         border: 1px solid #1e293b;
         box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-        align-self: center;
         position: relative;
     }
 
-    .checkout-page {
-        padding-top: 110px; /* espaço para a navbar */
-    }
-
-    /* Wrapper cartaz + data */
     .poster-wrapper {
         display: flex;
         gap: 12px;
         align-items: center;
     }
 
-    /* BADGE DATA */
+    /* BADGE DE DATA ESTILO BILHETE */
     .date-card {
-    width: 70px;
-    height: 120px;            
-    background: white;
-    border-radius: 6px;
-    overflow: hidden;
-    text-align: center;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-    font-family: 'Inter', sans-serif;
-    display: flex;          
-    flex-direction: column;
-}
+        width: 70px;
+        height: 110px;            
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        display: flex;          
+        flex-direction: column;
+    }
 
-    
-
-    /* MÊS (barra vermelha) */
     .date-month {
-        display: block;
         background: #cc0000;
-        color: #1a1f3a;
+        color: white;
         font-weight: 800;
         font-size: 0.75rem;
-        padding: 4px 0;
+        padding: 5px 0;
         letter-spacing: 1px;
     }
 
-    /* DIA */
     .date-day {
-        display: block;
         font-size: 1.8rem;
         font-weight: 800;
         color: #1a1f3a;
-        padding: 8px 0 4px;
-
-    }
-
-    /* HORA */
-    .date-hour {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #1a1f3a;
-        padding-bottom: 8px;
+        padding-top: 5px;
     }
 
     .date-year {
-        display: block;
         font-size: 0.7rem;
         font-weight: 600;
         color: #475569;
-        margin-bottom: 4px;
     }
-    
-    /* CARTAZ */
+
+    .date-hour {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1a1f3a;
+        padding: 4px 0 8px;
+    }
 
     .event-poster {
-        height: 120px;       
-        width: auto;           
+        height: 110px;       
         aspect-ratio: 3 / 4;    
         object-fit: cover;
         border-radius: 12px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
 
-
-    /* INFO */
     .event-info h1 {
-        font-size: 2rem;
-        margin-bottom: 8px;
-        color: #38bdf8;
-    }
-
-    /* META */
-    .event-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        font-size: 0.95rem;
-        color: #cbd5f5;
+        font-size: 2.2rem;
+        margin: 0 0 5px 0;
+        color: var(--accent);
+        text-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
     }
 
     .event-sala {
-    background: none !important;
-    border: none !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-
-    font-size: 0.95rem;
-    color: #94a3b8;
-    letter-spacing: 0.5px;
-}
-    /* PÁGINA DE CHECKOUT */
-    .checkout-page {
-        min-height: 100vh;
-        background: radial-gradient(circle at top, #0f172a, #020617);
-        color: #e5e7eb;
-        padding: 30px;
-    }
-
-    .top-header {
-        max-width: 1300px;
-        margin: 0 auto 30px;
-    }
-
-    .top-header h1 {
-        font-size: 2.2rem;
-        color: #38bdf8;
-    }
-
-    .top-header p {
+        font-size: 1rem;
         color: #94a3b8;
+        letter-spacing: 0.5px;
     }
 
-    /* GRID */
+    /* --- LAYOUT GRID --- */
     .content-grid {
-        max-width: 1300px;
+        max-width: 1200px;
         margin: 0 auto;
         display: grid;
-        grid-template-columns: 2.2fr 1fr;
+        grid-template-columns: 1fr 320px;
         gap: 30px;
     }
 
-    /* MAPA */
     .map-area {
-        background: #020617;
-        border-radius: 20px;
+        background: white; /* Mantém o fundo branco para o SVG original se destacar */
+        border-radius: 24px;
         padding: 30px;
-        border: 1px solid #1e293b;
-    }
-
-
-    .svg-wrapper {
-        position: relative;
-    }
-
-    .room-svg svg {
-        width: 100%;
-        height: auto;
-    }
-
-    .places-overlay {
-        position: absolute;
-        inset: 0;
-        pointer-events: none;
-    }
-
-    .seat {
-        fill: #22c55e;
-        stroke: #020617;
-        stroke-width: 0.6;
-        cursor: pointer;
-        pointer-events: all;
-        transition: 0.2s;
-    }
-
-    .seat:hover {
-        fill: #38bdf8;
-        r: 7;
-    }
-
-    .seat.selected {
-        fill: #a855f7;
-        r: 7;
-    }
-
-    /* PAINEL LATERAL */
-    .side-panel {
-        background: #020617;
-        border-radius: 20px;
-        padding: 25px;
-        border: 1px solid #1e293b;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         display: flex;
         flex-direction: column;
-        gap: 25px;
-    }
-
-    .panel-block h3 {
-        margin-bottom: 10px;
-        color: #38bdf8;
-    }
-
-    .zone-list {
-        list-style: none;
-        padding: 0;
-    }
-
-    .zone-list li {
-        display: flex;
         align-items: center;
-        gap: 10px;
-        color: #cbd5f5;
-        margin-bottom: 6px;
     }
 
-    .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
+    .instruction {
+        color: #64748b;
+        font-size: 0.8rem;
+        margin-bottom: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
     }
 
-    .dot.green { background: #22c55e; }
-    .dot.blue { background: #38bdf8; }
-    .dot.gray { background: #64748b; }
-    .dot.selected { background: #a855f7; }
-
-    .resumo strong {
-        color: #22c55e;
+    /* --- PAINEL LATERAL --- */
+    .side-panel {
+        background: var(--card-bg);
+        border-radius: 24px;
+        padding: 25px;
+        border: 1px solid #334155;
+        height: fit-content;
     }
 
-    /* FOOTER */
+    .side-panel h3 {
+        color: var(--accent);
+        font-size: 1.1rem;
+        margin-top: 0;
+        border-bottom: 1px solid #334155;
+        padding-bottom: 10px;
+    }
+
+    .ticket-mini {
+        background: #0f172a;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        display: flex;
+        flex-direction: column;
+        border-left: 4px solid var(--accent);
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .ticket-mini span {
+        font-size: 0.85rem;
+        color: #cbd5e1;
+    }
+
+    .ticket-mini strong {
+        font-size: 1.1rem;
+        color: #10b981;
+        margin-top: 5px;
+    }
+
+    /* --- FOOTER DE SELECÇÃO --- */
     .selection-footer {
         position: fixed;
         bottom: 30px;
@@ -442,85 +381,115 @@
         transform: translateX(-50%);
         background: #020617;
         border: 1px solid #1e293b;
-        padding: 15px 35px;
+        padding: 15px 40px;
         border-radius: 999px;
         display: flex;
-        gap: 30px;
+        gap: 40px;
         align-items: center;
-        box-shadow: 0 25px 40px rgba(0,0,0,0.6);
+        box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+        z-index: 100;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .footer-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .footer-info span {
+        font-size: 0.8rem;
+        color: #94a3b8;
+    }
+
+    .footer-info strong {
+        font-size: 1.3rem;
+        color: #10b981;
     }
 
     .confirm-btn {
-        background: linear-gradient(135deg, #22c55e, #16a34a);
-        border: none;
-        padding: 10px 28px;
-        border-radius: 999px;
-        font-weight: bold;
+        background: linear-gradient(135deg, #10b981, #059669);
         color: #020617;
-        cursor: pointer;
-    }
-
-    .close-btn {
-        position: absolute;
-        top: 16px;
-        right: 20px;
-        background: none;
         border: none;
-        color: white;
-        font-size: 2.5rem;
+        padding: 12px 35px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 1rem;
         cursor: pointer;
-        z-index: 10;
         transition: 0.3s ease;
     }
 
+    .confirm-btn:hover {
+        transform: translateY(-2px) scale(1.05);
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
 
-    .price-tooltip.follow-mouse {
-        position: absolute; /* Obrigatório para as coordenadas funcionarem */
-        background: #3b82f6;
-        color: white;
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-weight: bold;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        pointer-events: none; /* Evita que o tooltip "trema" ao tapar o lugar */
-        z-index: 999;
+    /* --- MODAL BLUEPRINT (AJUSTES) --- */
+.blueprint-overlay {
+        position: fixed;
+        inset: 0;
+        /* Fundo escuro mas com 85% de opacidade */
+        background: rgba(2, 6, 23, 0.85); 
+        z-index: 2000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        /* O segredo para ver o fundo desfocado */
+        backdrop-filter: blur(12px); 
+        -webkit-backdrop-filter: blur(12px);
+    }
+
+    .blueprint-window {
+        /* Fundo da janela ligeiramente transparente */
+        background: rgba(15, 23, 42, 0.9); 
+        width: 95vw;
+        height: 90vh;
+        border-radius: 24px;
+        /* Borda subtil para dar definição */
+        border: 1px solid rgba(255, 255, 255, 0.1); 
+        overflow: hidden;
         display: flex;
         flex-direction: column;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .blueprint-header {
+        padding: 20px 40px;
+        /* Header também segue a transparência */
+        background: rgba(30, 41, 59, 0.5); 
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        /* Removemos top e right fixos daqui */
-        transition: transform 0.1s ease-out; /* Suaviza o movimento */
-        white-space: nowrap;
-    }   
+    }
+
+    .canvas-paper {
+        flex: 1;
+        /* Fundo do canvas quase transparente para veres a página por trás */
+        background-color: rgba(2, 6, 23, 0.4); 
+        background-image: 
+            linear-gradient(rgba(56, 189, 248, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(56, 189, 248, 0.1) 1px, transparent 1px);
+        background-size: 40px 40px;
+        overflow: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .close-btn, .close-x {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        font-size: 2.5rem;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .close-x:hover { color: #ef4444; }
 
     @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(5px); }
-        to { opacity: 1; transform: translateY(0); }
+        from { opacity: 0; transform: translateX(10px); }
+        to { opacity: 1; transform: translateX(0); }
     }
-
-    .info-text strong {
-        color: #10b981;
-        font-size: 1.2rem;
-    }
-
-    .info-text small {
-        display: block;
-        color: #94a3b8;
-        max-width: 200px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .zona-name {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    opacity: 0.9;
-    letter-spacing: 0.5px;
-    }
-
-    .zona-price {
-        font-size: 1.1rem;
-    }
-
 
 </style>

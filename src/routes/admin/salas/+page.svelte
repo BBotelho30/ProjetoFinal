@@ -13,7 +13,7 @@
     let modalAberto = $state(false);
     let zonaAtiva = $state({ id: '', nome: '' });
     
-    // Histórico de configurações técnicas por zona (Persistência Local)
+    // Histórico de configurações técnicas por zona
     let configZonas = $state({}); 
 
     // Estado dos Inputs do Modal
@@ -31,86 +31,94 @@
 
     function carregarDadosSala() {
         const sala = data.salas?.find(s => s.nome_sala === salaSelecionada);
-        lugares = sala?.lugares_guardados || [];
-        
-        if (sala?.config_zonas) {
-        // Garantimos que o JSON é transformado em objeto JS
-        configZonas = typeof sala.config_zonas === 'string' 
-            ? JSON.parse(sala.config_zonas) 
-            : sala.config_zonas;
-    } else {
-        configZonas = {};
+        if(sala) {
+            // Sincroniza lugares e configurações da sala selecionada
+            lugares = [...(sala.lugares_guardados || [])];
+            configZonas = sala.config_zonas || {};
+        }
     }
-    }
-
 function selecionarZona(event) {
     const target = event.target.closest('path, polygon, rect');
     if (!target) return;
 
     const bbox = target.getBBox();
-    const generatedId = target.id || `z-${Math.round(bbox.x)}-${Math.round(bbox.y)}`;
+    const techId = target.id || `z-${Math.floor(bbox.x)}-${Math.floor(bbox.y)}`;
     
-    // Tenta recuperar o nome que guardaste na BD anteriormente
-    let nomeExistente = target.getAttribute('data-name') || target.id || 'Nova Zona';
-    if (configZonas[generatedId]?.nome) {
-        nomeExistente = configZonas[generatedId].nome;
-    }
+    const memoria = configZonas[techId];
 
-    zonaAtiva = { id: generatedId, nome: nomeExistente };
+    zonaAtiva = { 
+        id: techId, 
+        nome: memoria?.nome || target.getAttribute('data-name') || "Nova Zona" 
+    };
 
-    // Se a zona já tinha sido configurada, o modal abre com os números certos (filas/cols)
-    if (configZonas[generatedId]) {
-        config = { ...configZonas[generatedId] };
+    if (memoria) {
+        config = { 
+            filas: Number(memoria.filas), 
+            cols: Number(memoria.cols), 
+            espacamento: Number(memoria.espacamento), 
+            letraInicial: memoria.letraInicial, 
+            numInicial: Number(memoria.numInicial) 
+        };
     } else {
-        // Se for uma zona nunca antes tocada, usa o padrão
+        // Se for zona nova, o nome deixa de ser o número estranho e passa a ser "Nova Zona"
         config = { filas: 10, cols: 15, espacamento: 35, letraInicial: 'A', numInicial: 1 };
     }
-
     modalAberto = true;
 }
 
-    function gerarGrelhaNoBlueprint() {
-        const novos = [];
-        const offsetX = 100;
-        const offsetY = 80;
+function gerarGrelhaNoBlueprint() {
+    const novosDestaZona = [];
 
-        // Guardar logo a configuração e o nome atual no histórico
-        configZonas[zonaAtiva.id] = { ...config, nome: zonaAtiva.nome };
+    for (let f = 0; f < config.filas; f++) {
+        const labelFila = String.fromCharCode(
+            config.letraInicial.charCodeAt(0) + f
+        );
 
-        for (let f = 0; f < config.filas; f++) {
-            const labelFila = String.fromCharCode(config.letraInicial.charCodeAt(0) + f);
-            for (let c = 0; c < config.cols; c++) {
-                novos.push({
-                    id: Math.random(),
-                    x: offsetX + (c * config.espacamento),
-                    y: offsetY + (f * config.espacamento),
-                    zona: zonaAtiva.id,
-                    nomeZona: zonaAtiva.nome,
-                    fila: labelFila,
-                    num: config.numInicial + c,
-                    visivel: true
-                });
-            }
+        for (let c = 0; c < config.cols; c++) {
+            novosDestaZona.push({
+                id: Math.random(),
+                x: 100 + (c * config.espacamento),
+                y: 80 + (f * config.espacamento),
+                zona: zonaAtiva.id,
+                nomeZona: zonaAtiva.nome,
+                fila: labelFila,
+                num: config.numInicial + c,
+                visivel: true
+            });
         }
-        
-        const outrosLugares = lugares.filter(l => l.zona !== zonaAtiva.id);
-        lugares = [...outrosLugares, ...novos];
     }
 
-    function fecharESalvarZona() {
-        // 1. Guardar snapshot final da técnica e do nome no histórico
-        configZonas[zonaAtiva.id] = { ...config, nome: zonaAtiva.nome };
-        
-        // 2. Sincronizar o nome em todos os lugares desta zona
-        lugares = lugares.map(l => {
-            if (l.zona === zonaAtiva.id) {
-                return { ...l, nomeZona: zonaAtiva.nome };
-            }
-            return l;
-        });
-        
-        modalAberto = false;
-    }
+    const outrosLugares = lugares.filter(
+        l => l.zona !== zonaAtiva.id
+    );
+
+    lugares = [...outrosLugares, ...novosDestaZona];
+
+    configZonas[zonaAtiva.id] = {
+        ...config,
+        nome: zonaAtiva.nome,
+        idTecnico: zonaAtiva.id
+    };
+}
+
+
+function fecharESalvarZona() {
+    configZonas[zonaAtiva.id] = {
+        ...config,
+        nome: zonaAtiva.nome,
+        idTecnico: zonaAtiva.id
+    };
+
+    lugares = lugares.map(l => {
+        if (l.zona === zonaAtiva.id) {
+            return { ...l, nomeZona: zonaAtiva.nome };
+        }
+        return l;
+    });
+
+    modalAberto = false;
+}
+
 
     function alternarVisibilidade(id) {
         lugares = lugares.map(l => l.id === id ? { ...l, visivel: !l.visivel } : l);
@@ -142,13 +150,12 @@ function selecionarZona(event) {
                     <p>Zonas Mapeadas: <strong>{Object.keys(configZonas).length}</strong></p>
                     <p>Cadeiras Ativas: <strong>{lugares.filter(l => l.visivel).length}</strong></p>
                 </div>
-        <form method="POST" action="?/guardarLugares"> 
-    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
-    <input type="hidden" name="config_zonas" value={JSON.stringify(configZonas)} />
-    <input type="hidden" name="sala" value={salaSelecionada} />
-    
-    <button type="submit" class="btn-save-all">💾 PUBLICAR MAPA FINAL</button>
-</form>
+                <form method="POST" action="?/guardarLugares" use:enhance>
+                    <input type="hidden" name="lugares" value={JSON.stringify(lugares)} />
+                    <input type="hidden" name="config_zonas" value={JSON.stringify(configZonas)} />
+                    <input type="hidden" name="sala" value={salaSelecionada} />
+                    <button type="submit" class="btn-save-all">💾 PUBLICAR MAPA FINAL</button>
+                </form>
                 <button class="btn-clear" onclick={() => { if(confirm('Limpar tudo?')) lugares = [] }}>Limpar Desenho</button>
             </div>
         {/if}
@@ -264,7 +271,6 @@ function selecionarZona(event) {
     .instruction { color: #64748b; font-size: 0.8rem; text-align: center; margin-bottom: 1.5rem; }
     :global(.svg-main svg) { height: 65vh; width: auto; cursor: crosshair; }
 
-    /* Modal Estúdio */
     .blueprint-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: flex; justify-content: center; align-items: center; z-index: 1000; }
     .blueprint-window { background: #0f172a; width: 95vw; height: 92vh; border-radius: 1rem; display: flex; flex-direction: column; border: 1px solid #334155; overflow: hidden; }
     .blueprint-header { padding: 1.5rem 2.5rem; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
