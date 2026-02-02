@@ -63,6 +63,8 @@ function finalizarSelecao() {
                 id_sala: sessao.id_sala,
                 nome_evento: sessao.nome_evento, 
                 nome_sala: sessao.nome_sala,
+                data: sessao.data_espectaculo, 
+                hora: sessao.hora_inicio,
                 fila: l.fila, 
                 num: l.num, 
                 preco: l.preco, 
@@ -164,74 +166,47 @@ function finalizarSelecao() {
 {/if}
 
 <style>
-    .checkout-page { min-height: 100vh; background: var(--bg); padding: 40px; color: white; padding-top: 120px; }
-    
-    .event-header { display: flex; align-items: center; gap: 30px; background: rgba(30, 41, 59, 0.8); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px; border: 1px solid #334155; position: relative; max-width: 1200px; margin: 0 auto; }
-    .date-card { background: white; color: #1e293b; padding: 5px; border-radius: 8px; text-align: center; display: flex; flex-direction: column; width: 60px; overflow: hidden; }
-    .date-month { background: #ef4444; color: white; font-size: 0.7rem; font-weight: bold; padding: 2px 0; }
-    .date-day { font-size: 1.5rem; font-weight: 800; }
-    .event-poster { height: 100px; border-radius: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-    .event-info h1 { margin: 0; font-size: 1.8rem; color: var(--accent); }
-    .event-sala { color: #94a3b8; font-size: 0.9rem; }
 
-    .content-grid { display: grid; grid-template-columns: 1fr 350px; gap: 30px; max-width: 1200px; margin: 40px auto; }
-    .map-area { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    :root {
+        --primary-color: #0f3460;
+        --secondary-color: #ff0000;
+        --background-dark: #1a1a2e;
+        --text-light: #e0e0e0;
+        --text-muted: #888;
+        --card-bg: #16213e;
+    }
+
+    .checkout-page {
+        min-height: 100vh;
+        padding: 30px 30px 40px;
+        color: var(--text-light);
+        background: var(--primary-color);
+    }
+
     :global(.room-svg svg) { width: 100%; height: auto; cursor: crosshair; }
     .map-hint { color: #64748b; text-align: center; font-size: 0.8rem; margin-top: 15px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-
-    .side-panel { background: var(--card); padding: 25px; border-radius: 24px; border: 1px solid #334155; }
-    .ticket-mini { background: #0f172a; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; border-left: 4px solid var(--accent); }
-
-    .blueprint-overlay { position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-    .blueprint-window { background: #0f172a; width: 90vw; height: 85vh; border-radius: 24px; border: 1px solid #334155; display: flex; flex-direction: column; }
-    .blueprint-header { padding: 20px 40px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-    .canvas-paper { flex: 1; position: relative; overflow: auto; background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; }
 
     .seat { fill: #10b981; transition: 0.2s; cursor: pointer; stroke: #0f172a; stroke-width: 2; }
     .seat:hover { fill: var(--accent); r: 18; }
     .seat.selected { fill: #f59e0b; r: 18; stroke: white; }
     .seat-g.occupied { opacity: 0.2; cursor: not-allowed; pointer-events: none; }
     .seat-label { fill: white; font-size: 10px; font-weight: bold; text-anchor: middle; pointer-events: none; }
-    
-    .selection-footer { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #10b981; padding: 12px 40px; border-radius: 50px; display: flex; gap: 40px; align-items: center; box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4); z-index: 100; }
-    .confirm-btn { background: white; color: #065f46; border: none; padding: 12px 30px; border-radius: 25px; font-weight: 800; cursor: pointer; transition: 0.3s; }
-    .confirm-btn:hover { transform: scale(1.05); background: #f0fdf4; }
-
     .tooltip { position: fixed; background: var(--accent); color: #020617; padding: 6px 15px; border-radius: 8px; font-weight: 800; pointer-events: none; z-index: 3000; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
-    .close-btn, .close-x { background: none; border: none; color: white; font-size: 2.5rem; cursor: pointer; opacity: 0.6; transition: 0.2s; }
-    .close-btn:hover, .close-x:hover { opacity: 1; color: #ef4444; }
-
- 
-    :root {
-        --primary-color: #0f3460;
-        --secondary-color: #ff0000;
-        --background-dark: #020617;
-        --card-bg: #1e293b;
-        --accent: #38bdf8;
-    }
 
     :global(body) {
         margin: 0;
         background: var(--background-dark);
         color: #e5e7eb;
-        font-family: 'Inter', sans-serif;
     }
 
-    .checkout-page {
-        padding: 120px 30px 40px; /* Espaço para navbar e margens */
-        min-height: 100vh;
-        background: radial-gradient(circle at top, #0f172a, #020617);
-    }
-
-    /* --- HEADER DO EVENTO (FUTURISTA) --- */
     .event-header {
-        max-width: 1200px;
+        max-width: 1160px;
         margin: 0 auto 35px;
         display: flex;
         gap: 25px;
         align-items: center;
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
-        padding: 20px 25px;
+        background: rgba(22, 33, 62, 0.96);
+        padding: 20px 20px;
         border-radius: 22px;
         border: 1px solid #1e293b;
         box-shadow: 0 25px 50px rgba(0,0,0,0.6);
@@ -244,7 +219,6 @@ function finalizarSelecao() {
         align-items: center;
     }
 
-    /* BADGE DE DATA ESTILO BILHETE */
     .date-card {
         width: 70px;
         height: 110px;            
@@ -336,10 +310,10 @@ function finalizarSelecao() {
 
     /* --- PAINEL LATERAL --- */
     .side-panel {
-        background: var(--card-bg);
+        background: rgba(22, 33, 62, 0.96);
         border-radius: 24px;
         padding: 25px;
-        border: 1px solid #334155;
+        border: 1px solid #1e293b;
         height: fit-content;
     }
 
@@ -369,7 +343,7 @@ function finalizarSelecao() {
 
     .ticket-mini strong {
         font-size: 1.1rem;
-        color: #10b981;
+        color: var(--secondary-color);
         margin-top: 5px;
     }
 
@@ -388,7 +362,7 @@ function finalizarSelecao() {
         align-items: center;
         box-shadow: 0 25px 50px rgba(0,0,0,0.8);
         z-index: 100;
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        border: 1px solid var(--background-dark);
     }
 
     .footer-info {
@@ -403,11 +377,11 @@ function finalizarSelecao() {
 
     .footer-info strong {
         font-size: 1.3rem;
-        color: #10b981;
+        color: var(--secondary-color);
     }
 
     .confirm-btn {
-        background: linear-gradient(135deg, #10b981, #059669);
+        background: var(--secondary-color);
         color: #020617;
         border: none;
         padding: 12px 35px;
@@ -420,11 +394,11 @@ function finalizarSelecao() {
 
     .confirm-btn:hover {
         transform: translateY(-2px) scale(1.05);
-        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        box-shadow: 0 10px 10px rgba(255, 0, 0, 0.4);
     }
 
     /* --- MODAL BLUEPRINT (AJUSTES) --- */
-.blueprint-overlay {
+    .blueprint-overlay {
         position: fixed;
         inset: 0;
         /* Fundo escuro mas com 85% de opacidade */
@@ -484,8 +458,24 @@ function finalizarSelecao() {
         cursor: pointer;
         transition: 0.2s;
     }
+    
+    .close-btn {
+        position: absolute;
+        top: 30px;
+        right: 30px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 3em;
+        cursor: pointer;
+        z-index: 10;
+        transition: 0.3s ease;
+    }
 
-    .close-x:hover { color: #ef4444; }
+    .close-btn:hover {
+        color: #ff0000;
+        transform: rotate(90deg);
+    }
 
     @keyframes fadeIn {
         from { opacity: 0; transform: translateX(10px); }

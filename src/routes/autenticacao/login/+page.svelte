@@ -1,44 +1,73 @@
 <script>
-    import { user } from '$lib/userStore'; 
-    import { goto } from '$app/navigation';
+  // @ts-nocheck
+  import { supabase } from '$lib/supabaseClient';
+  import { goto } from '$app/navigation';
+  import { user } from '$lib/userStore';
 
-    let email = '';
-    let password = '';
-    let errorMessage = '';
 
-    async function handleLogin() {
-        errorMessage = '';
-        
-        try {
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+  let email = '';
+  let password = '';
+  let loading = false;
+  let errorMessage = '';
 
-            const result = await response.json();
+  async function handleLogin() {
+  errorMessage = '';
+  loading = true;
 
-            if (result.success) {
-                // Guarda os dados do utilizador no store
-                user.set(result.user); 
+  const { data: { session }, error } =
+    await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-                // O IF que verifica o tipo de utilizador para redirecionar
-                if (result.user.tipo === 'admin') {
-                    // Se for admin, vai para a página de gestão
-                    goto('/admin');
-                } else {
-                    // Se for cliente, vai para a página de reservas
-                    goto('/dashboard');
-                }
-                
-            } else {
-                errorMessage = result.message;
-            }
-        } catch (error) {
-            errorMessage = 'Erro ao ligar ao servidor. Verifica se o MySQL está ativo.';
-        }
+  loading = false;
+
+  if (error || !session) {
+    errorMessage = error?.message || 'Erro desconhecido durante o login.';
+    return;
+  }
+
+  // sincronizar
+  const syncRes = await fetch('/api/sync-user', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`
     }
+  });
+
+  // buscar tipo
+  const meRes = await fetch('/api/me', {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`
+    }
+  });
+
+
+  if (!meRes.ok) {
+    return;
+  }
+
+  const data = await meRes.json();
+
+  // 🔐 guardar o utilizador COMPLETO no store
+  user.set({
+    id: session.user.id,
+    email: session.user.email,
+    nome: data.tipo === 'admin'
+        ? 'Administrador'
+        : session.user.user_metadata?.nome ?? 'Utilizador',
+    tipo: data.tipo,
+  });
+
+  if (data.tipo === 'admin') {
+    goto('/admin');
+  } else {
+    goto('/');
+  }
+}
+
 </script>
+
 
 <main class="auth-page">
     <div class="auth-card">
@@ -61,7 +90,9 @@
                 <input type="password" bind:value={password} required />
             </label>
 
-            <button type="submit" class="call-to-action">Entrar</button>
+            <button type="submit" class="call-to-action" disabled={loading}>
+              {loading ? 'A entrar...' : 'Entrar'}
+            </button>
         </form>
 
         <p class="auth-footer">Ainda não tens conta? <a href="/autenticacao/registo">Registar</a></p>

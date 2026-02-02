@@ -4,7 +4,10 @@
     import { user } from '$lib/userStore';
     import { goto } from '$app/navigation';
     import { page } from '$app/stores';
-    import { carrinho } from '$lib/cartStore';
+    import { supabase } from '$lib/supabaseClient';
+    import { onMount } from 'svelte';
+    import { carrinho, cartActions } from '$lib/cartStore';
+
 
     let { children } = $props();
 
@@ -14,8 +17,10 @@
     // Condição para mostrar o carrinho: apenas se houver um utilizador logado
     let mostrarCarrinho = $derived($user !== null);
 
-    function logout() {
+    async function logout() {
+        await supabase.auth.signOut();
         user.set(null);
+        cartActions.clearCart();
         goto('/');
     }
 
@@ -27,6 +32,46 @@
         $page.url.pathname === '/(auth)/login' ||
         $page.url.pathname === '/(auth)/registo'
     );
+
+    // Verificar sessão do utilizador ao montar o componente
+    onMount(async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+
+        if (!sessionData?.session) {
+            user.set(null);
+            cartActions.clearCart();
+            return;
+        }
+
+        const session = sessionData.session;
+
+        // 🔐 ir buscar o tipo ao backend
+        const meRes = await fetch('/api/me', {
+            headers: {
+            Authorization: `Bearer ${session.access_token}`
+            }
+        });
+
+        if (!meRes.ok) {
+            user.set(null);
+            return;
+        }
+
+        const me = await meRes.json();
+
+        user.set({
+            id: session.user.id,
+            email: session.user.email,
+            nome: me.tipo === 'admin'
+            ? 'Administrador'
+            : session.user.user_metadata?.nome ?? 'Utilizador',
+            tipo: me.tipo,
+            foto: null
+        });
+
+        cartActions.loadCart(session.user.id);
+    });
+
 
 </script>
 
@@ -62,7 +107,7 @@
 						{#if $user.foto}
 							<img src={$user.foto} alt="Foto de perfil" />
 						{:else}
-							<span>{ $user.nome.charAt(0).toUpperCase() }</span>
+							<span>{ $user?.nome?.[0]?.toUpperCase() ?? '' }</span>
 						{/if}
 					</div>
 					<span class="user-name">{$user.nome}</span>

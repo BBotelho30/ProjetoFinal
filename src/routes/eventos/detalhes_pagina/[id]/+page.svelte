@@ -111,8 +111,13 @@
         if (!$user) {
             goto('/autenticacao/login');
         } else {
-            goto(`/salas_compra/${sessao.id_sala}?evento=${sessao.id_eventos}`);
-        }
+            goto(
+                `/salas_compra/${sessao.id_sala}` +
+                `?evento=${sessao.id_eventos}` +
+                `&data=${sessao.data_espectaculo}` +
+                `&hora=${sessao.hora_inicio}`
+            );
+        }        
     }
 
 

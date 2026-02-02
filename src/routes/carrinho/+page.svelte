@@ -7,6 +7,7 @@
     $: evento = data?.evento || {};
     $: itens = data?.itens || [];
 
+
     $: total = itens.reduce((acumulador, objetoAtual) => {
         const valor = Number(objetoAtual.preco) || 0;
         return acumulador + valor;
@@ -14,16 +15,28 @@
 
     const formatarPreco = (valor) => Number(valor).toFixed(2) + '€';
 
+    function formatarData(dataStr) {
+        if (!dataStr) return '--/--/----';
+        const d = new Date(dataStr);
+        return d.toLocaleDateString('pt-PT');
+    }
 
 
-    $: itensAgrupados = $carrinho.reduce((acc, item) => {
+
+    $: itensAgrupados = Array.isArray($carrinho)
+    ? $carrinho.reduce((acc, item) => {
         const chave = `${item.nome_evento}-${item.data}`;
         if (!acc[chave]) acc[chave] = { info: item, lugares: [] };
         acc[chave].lugares.push(item);
         return acc;
-    }, {});
+        }, {})
+    : {};
 
-    $: totalGeral = $carrinho.reduce((acc, item) => acc + Number(item.preco), 0);
+
+    $: totalGeral = Array.isArray($carrinho)
+    ? $carrinho.reduce((acc, item) => acc + Number(item.preco), 0)
+    : 0;
+        
 </script>
 
 <main class="cart-page">
@@ -43,7 +56,7 @@
                                     <div class="details">
                                         <strong>{grupo.info.nome_evento}</strong>
                                         <span>{grupo.info.nome_sala}</span>
-                                        <span>{grupo.info.data} | {grupo.info.hora.slice(0,5)}</span>
+                                        <span>{formatarData(grupo.info.data)} |{grupo.info.hora ? grupo.info.hora.slice(0,5) : '--:--'}</span>
                                     </div>
                                 </div>
                             </td>
@@ -54,7 +67,7 @@
                                 <td class="text-center">{lugar.zona}</td>
                                 <td class="text-right">
                                     {Number(lugar.preco).toFixed(2)}€
-                                    <button class="btn-delete" on:click={() => removerDoCarrinho(lugar.id_lugar)}>🗑️</button>
+                                    <button class="btn-delete" onclick={() => removerDoCarrinho(lugar.id_lugar)}>🗑️</button>
                                 </td>
                             </tr>
                         {/each}
@@ -69,8 +82,8 @@
         </div>
 
         <div class="cart-actions">
-            <button class="btn-dark" on:click={() => goto('/eventos')}>MAIS COMPRAS</button>
-            <button class="btn-success" on:click={() => goto('/finalizacaoCompra')}>FINALIZAR COMPRA</button>
+            <button class="btn-dark" onclick={() => goto('/eventos')}>MAIS COMPRAS</button>
+            <button class="btn-success" onclick={() => goto('/finalizacaoCompra')}>FINALIZAR COMPRA</button>
         </div>
     </div>
 </main>

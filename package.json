@@ -21,11 +21,15 @@
 		"vite": "^7.2.2"
 	},
 	"dependencies": {
+		"@supabase/supabase-js": "^2.93.3",
+		"bcrypt": "^6.0.0",
 		"bcryptjs": "^3.0.3",
 		"date-fns": "^4.1.0",
 		"dotenv": "^17.2.3",
 		"mysql2": "^3.16.0",
+		"nodemailer": "^7.0.13",
 		"sqlite": "^5.1.1",
-		"sqlite3": "^5.1.7"
+		"sqlite3": "^5.1.7",
+		"uuid": "^13.0.0"
 	}
 }

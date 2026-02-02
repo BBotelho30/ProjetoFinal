@@ -2,37 +2,67 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
-// Recupera os dados do localStorage
-const dadosIniciais = browser && localStorage.getItem('meu_carrinho') 
-    ? JSON.parse(localStorage.getItem('meu_carrinho')) 
-    : [];
+export const carrinho = writable([]);
 
-// cria a store com os dados recuperados
-//writable é usado para criar uma store que pode ser lida e escrita
-export const carrinho = writable(dadosIniciais);
+let currentUserId = null;
 
-// Sempre que a store mudar, grava no localStorage
-if (browser) {
-    carrinho.subscribe((valor) => {
-        localStorage.setItem('meu_carrinho', JSON.stringify(valor));
-    });
+// 🔹 Carregar carrinho do utilizador
+function loadCart(userId) {
+    if (!browser || !userId) {
+        carrinho.set([]);
+        return;
+    }
+
+    currentUserId = userId;
+
+    const saved = localStorage.getItem(`cart_${userId}`);
+    if (saved) {
+        carrinho.set(JSON.parse(saved));
+    } else {
+        carrinho.set([]);
+    }
 }
 
-// Função para adicionar itens
-export function adicionarAoCarrinho(novoItem) {
-    carrinho.update(itens => {
-        const existe = itens.find(i => i.id_lugar === novoItem.id_lugar && i.id_sessao === novoItem.id_sessao);
-        if (existe) return itens;
-        return [...itens, novoItem];
-    });
-}
-
-// Função para remover itens
-export function removerDoCarrinho(idLugar) {
-    carrinho.update(itens => itens.filter(i => i.id_lugar !== idLugar));
-}
-
-// Função para limpar tudo (útil após o pagamento final)
-export function limparCarrinho() {
+// 🔹 Limpar carrinho da memória
+function clearCart() {
+    currentUserId = null;
     carrinho.set([]);
 }
+
+// 🔹 ADICIONAR ITEM AO CARRINHO ✅
+function adicionarAoCarrinho(item) {
+    carrinho.update((items) => {
+        return [...items, item];
+    });
+}
+
+// 🔹 REMOVER ITEM DO CARRINHO (opcional, mas útil)
+function removerDoCarrinho(index) {
+    carrinho.update((items) => {
+        items.splice(index, 1);
+        return [...items];
+    });
+}
+
+// 🔹 Guardar automaticamente
+if (browser) {
+    carrinho.subscribe((items) => {
+        if (currentUserId) {
+            localStorage.setItem(
+                `cart_${currentUserId}`,
+                JSON.stringify(items)
+            );
+        }
+    });
+}
+
+export const cartActions = {
+    loadCart,
+    clearCart,
+    adicionarAoCarrinho,
+    removerDoCarrinho
+};
+
+// 👉 EXPORTS DIRETOS (para código antigo não quebrar)
+export { adicionarAoCarrinho, removerDoCarrinho };
+

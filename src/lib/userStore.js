@@ -2,7 +2,13 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
 // Criamos o store vazio primeiro (seguro para o servidor)
-export const user = writable(null);
+export const user = writable({
+  id: null,
+  email: null,
+  nome: null,
+  tipo: null,
+  foto: null
+});
 
 // Só corre à lógica de recuperação se estivermos no browser
 if (browser) {

@@ -1,5 +1,7 @@
 <script>
-    import { goto } from '$app/navigation'; // Para mudar de página após o sucesso
+
+    import { goto } from '$app/navigation';
+    import { supabase } from '$lib/supabaseClient';
 
     let nome = '';
     let apelido = '';
@@ -10,34 +12,34 @@
 
     async function handleRegister() {
         if (password !== passwordConfirm) {
-            alert('As palavras-passe não coincidem');
-            return;
+        alert('As palavras-passe não coincidem');
+        return;
         }
 
         loading = true;
 
-        try {
-            const response = await fetch('/api/registo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, apelido, email, password })
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                nome,
+                apelido
+                }
+            }
             });
 
-            const result = await response.json();
+        loading = false;
 
-            if (result.success) {
-                alert('Registo concluído com sucesso!');
-                goto('/autenticacao/login'); 
-            } else {
-                alert(result.message);
-            }
-        } catch (error) {
-            alert('Erro ao tentar registar. Verifica a ligação ao servidor.');
-        } finally {
-            loading = false;
+        if (error) {
+        alert(error.message);
+        return;
         }
+
+        goto('/autenticacao/email-enviado');
     }
 </script>
+
 
 <main class="auth-page">
     <div class="auth-card">
