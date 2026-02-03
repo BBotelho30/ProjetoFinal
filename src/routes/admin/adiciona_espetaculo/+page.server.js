@@ -10,6 +10,8 @@ export const load = async ({ url }) => {
         const id_editar = url.searchParams.get('id');
         let evento = null;
 
+        const todasZonas = await query('SELECT id_zona, nome_zona, id_sala FROM Zona');
+
         if (id_editar) {
             // Carrega os dados do evento
             const resEvento = await query('SELECT * FROM Eventos WHERE id_eventos = ?', [id_editar]);
@@ -19,6 +21,11 @@ export const load = async ({ url }) => {
                 
                 // Carrega as sessões associadas
                 const sessoesDaBD = await query('SELECT * FROM Eventos_Sala WHERE id_eventos = ?', [id_editar]);
+
+                // Carrega os preços por zona
+                const precosBD = await query('SELECT id_zona, preco FROM Preco_Evento_Zona WHERE id_eventos = ?', [id_editar]);
+                const mapaPrecos = {};
+                precosBD.forEach(p => mapaPrecos[p.id_zona] = p.preco);
 
                 evento.sessoes = sessoesDaBD.map(s => {
                     const d = new Date(s.data_espectaculo);
@@ -31,23 +38,26 @@ export const load = async ({ url }) => {
                         data: `${ano}-${mes}-${dia}`, // Formato YYYY-MM-DD
                         hora: s.hora_inicio.slice(0, 5),
                         duracao: s.duracao ? s.duracao.slice(0, 5) : '01:30',
-                        limite_bilhetes: s.limite_bilhetes || 10
+                        limite_bilhetes: s.limite_bilhetes || 10,
+                        precos: mapaPrecos
                     };
                 });
             }
         }
 
-        return { salas, evento };
+        return { salas, evento, todasZonas };
     } catch (err) {
         console.error('Erro ao carregar dados:', err);
-        return { salas: [], evento: null };
+        return { salas: [], evento: null , todasZonas: [] };
     }
 };
+
+
+
 
 export const actions = {
     default: async ({ request }) => {
         const data = await request.formData();
-        
         // Identificar se é Edição ou Criação
         const id_evento = data.get('id_evento'); 
         const nome = data.get('nome');
@@ -57,9 +67,7 @@ export const actions = {
         const imagem_atual = data.get('imagem_atual'); // Campo hidden que adicionámos no Svelte
         const id_utilizador = 1;
         
-
-        const sessoesRaw = data.get('sessoes_data');
-        const sessoes = JSON.parse(sessoesRaw || '[]');
+        const sessoes = JSON.parse(data.get('sessoes_data') || '[]');
 
         // Verificação de Conflitos de Agendamento
         for (const sessao of sessoes) {
@@ -128,6 +136,16 @@ export const actions = {
                     'INSERT INTO Eventos_Sala (id_eventos, id_sala, hora_inicio, data_espectaculo, duracao, limite_bilhetes) VALUES (?, ?, ?, ?, ?, ?)',
                     [id_final, sessao.id_sala, sessao.hora, sessao.data, sessao.duracao, sessao.limite_bilhetes || 10]
                 );
+
+                if (sessao.precos) {
+                    for (const [id_zona, valor] of Object.entries(sessao.precos)) {
+                        await query(
+                            'INSERT INTO Preco_Evento_Zona (id_eventos, id_zona, preco) VALUES (?, ?, ?)',
+                            [id_final, id_zona, valor]
+                        );
+                    }
+                }
+
             }
 
         } catch (err) {

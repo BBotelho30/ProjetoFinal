@@ -12,19 +12,19 @@
     <div class="cards-container">
         <button class="admin-card" on:click={() => goto('/admin/salas')}>
             <div class="icon">🏢</div>
-            <h2>Gestão de Salas de Espetáculo</h2>
+            <h2>Gestão de Salas de Eventos</h2>
             <div class="plus-sign">+</div>
         </button>
 
         <button class="admin-card" on:click={() => goto('/admin/adiciona_espetaculo')}>
             <div class="icon">🎭</div>
-            <h2>Adicionar Espetáculo</h2>
+            <h2>Adicionar Evento</h2>
             <div class="plus-sign">+</div>
         </button>
 
         <button class="admin-card" on:click={() => goto('/admin/salas/adicionar_salas')}>
             <div class="icon">🎟️</div>
-            <h2>Adicionar Sala de Espetáculo</h2>
+            <h2>Adicionar Sala de Eventos</h2>
             <div class="plus-sign">+</div>
         </button>
         

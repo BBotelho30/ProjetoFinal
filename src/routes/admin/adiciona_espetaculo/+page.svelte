@@ -1,147 +1,219 @@
-<script>
-// @ts-nocheck
-import { user } from '$lib/userStore';
-import { onMount, tick } from 'svelte';
-import { goto } from '$app/navigation';
+    <script>
+    // @ts-nocheck
+    import { user } from '$lib/userStore';
+    import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
 
-export let form;
-export let data;
-const salas = data?.salas || [];
+    // Svelte 5: Receber props do servidor
+    let { data, form = $bindable() } = $props();
 
-// Proteção de rota
-onMount(() => {
-    if (!$user || $user.tipo !== 'admin') {
-        goto('/autenticacao/login');
+    const salas = $derived(data?.salas || []);
+
+    let zonasPorSala = $state({});
+
+    // Proteção de rota
+    onMount(() => {
+        if (!$user || $user.tipo !== 'admin') {
+            goto('/autenticacao/login');
+        }
+    });
+
+    // Estados Reativos ($state)
+    let nomeFicheiro = $state('');
+    let sessoes = $state(data?.evento?.sessoes ? [...data.evento.sessoes] : 
+        [{ id_sala: '', data: '', hora: '', duracao: '01:30', limite_bilhetes: 10 }]);
+
+    // Serialização automática para o input hidden
+    let sessoesJSON = $derived(JSON.stringify(sessoes));
+
+    function adicionarSessao() {
+        sessoes.push({ id_sala: '', data: '', hora: '', duracao: '01:30', limite_bilhetes: 10 });
     }
-});
 
-let nomeFicheiro = '';
-let sessoes = [{ id_sala: '', data: '', hora: '', duracao: '01:30', limite_bilhetes: 10 }];
-
-// --- LÓGICA DE EDIÇÃO: Sincroniza os dados vindos do servidor ---
-$: if (data?.evento?.sessoes) {
-    sessoes = [...data.evento.sessoes];
-}
-
-function adicionarSessao() {
-    sessoes = [...sessoes, { id_sala: '', data: '', hora: '', duracao: '01:30', limite_bilhetes: 10 }];
-}
-
-function removerSessao(index) {
-    if (sessoes.length > 1) {
-        sessoes = sessoes.filter((_, i) => i !== index);
+    function removerSessao(index) {
+        if (sessoes.length > 1) {
+            sessoes.splice(index, 1);
+        }
     }
-}
 
-function mostrarNome(e) {
-    const ficheiro = e.target.files[0];
-    if (ficheiro) nomeFicheiro = ficheiro.name;
-}
+    function mostrarNome(e) {
+        const ficheiro = e.target.files[0];
+        if (ficheiro) {
+            nomeFicheiro = ficheiro.name;
+            // Criar um URL temporário para pré-visualização (opcional)
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const imgElement = document.getElementById('preview-img');
+                if (imgElement) imgElement.style.backgroundImage = `url(${ev.target.result})`;
+            };
+            reader.readAsDataURL(ficheiro);
+        }
+    }
 
-// Serializa o array para enviar via formulário POST
-$: sessoesJSON = JSON.stringify(sessoes);
+    // Timer para o Toast de erro
+    $effect(() => {
+        if (form?.message) {
+            const timer = setTimeout(() => {
+                form.message = null;
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    });
 
-// Toast error timer
-$: if (form?.message) {
-    setTimeout(() => {
-        form.message = null;
-    }, 5000);
-}
-</script>
 
-<main class="hero-section">
-    <form method="POST" class="form-container" enctype="multipart/form-data">
-        <input type="hidden" name="id_evento" value={data?.evento?.id_eventos || ''} />
-        <input type="hidden" name="imagem_atual" value={data?.evento?.imagem_cartaz || ''} />
-        <input type="hidden" name="sessoes_data" value={sessoesJSON} />
+    onMount(async () => {
+            if (data?.evento?.sessoes) {
+                for (let i = 0; i < sessoes.length; i++) {
+                    if (sessoes[i].id_sala) {
+                        await carregarZonas(sessoes[i].id_sala, i);
+                    }
+                }
+            }
+        });
 
-        <button type="button" class="close-btn" on:click={() => window.history.back()}>&times;</button>
-        
-        <h1 class="hero-title">
-            {data?.evento ? 'Editar Espetáculo' : 'Configurar Espetáculo'}
-        </h1>
+    async function carregarZonas(id_sala, indexSessao) {
+        if (!id_sala) return;
+        try {
+            const res = await fetch(`/api/zonas/${id_sala}`);
+            if (!res.ok) throw new Error('Falha ao carregar zonas');
+            const zonas = await res.json();
 
-        <div class="form-layout">
-            <div class="image-column">
-                <div class="image-upload" style="background-image: url({data?.evento?.imagem_cartaz || ''}); background-size: cover; background-position: center;">
-                    {#if nomeFicheiro}
-                        <p class="file-name">{nomeFicheiro}</p>
-                    {:else if !data?.evento?.imagem_cartaz}
-                        <p>ADICIONAR CARTAZ</p>
-                        <span class="plus-icon">+</span>
-                    {/if}
-                    <input type="file" name="imagem_ficheiro" accept="image/*" required={!data?.evento} class="file-input" on:change={mostrarNome} />
+            // Guardamos as zonas para esta sala específica
+            zonasPorSala[id_sala] = zonas;
+
+            // Inicializa o objeto de preços se não existir
+            if (!sessoes[indexSessao].precos) {
+                sessoes[indexSessao].precos = {};
+            }
+
+            // Garante que cada zona tem uma chave no objeto de preços
+            zonas.forEach(z => {
+                if (sessoes[indexSessao].precos[z.id_zona] === undefined) {
+                    sessoes[indexSessao].precos[z.id_zona] = 0;
+                }
+            });
+        } catch (err) {
+            console.error("Erro no fetch das zonas:", err);
+        }
+    }
+    </script>
+
+    <main class="hero-section">
+        <form method="POST" class="form-container" enctype="multipart/form-data">
+            <input type="hidden" name="id_evento" value={data?.evento?.id_eventos || ''} />
+            <input type="hidden" name="imagem_atual" value={data?.evento?.imagem_cartaz || ''} />
+            <input type="hidden" name="sessoes_data" value={sessoesJSON} />
+
+            <button type="button" class="close-btn" onclick={() => window.history.back()}>&times;</button>
+            
+            <h1 class="hero-title">
+                {data?.evento ? 'Editar Espetáculo' : 'Criar Evento'}
+            </h1>
+
+            <div class="form-layout">
+                <div class="image-column">
+                    <div 
+                        id="preview-img"
+                        class="image-upload" 
+                        style="background-image: url({data?.evento?.imagem_cartaz || ''}); background-size: cover; background-position: center;"
+                    >
+                        {#if nomeFicheiro}
+                            <p class="file-name">{nomeFicheiro}</p>
+                        {:else if !data?.evento?.imagem_cartaz}
+                            <p>ADICIONAR CARTAZ</p>
+                            <span class="plus-icon">+</span>
+                        {/if}
+                        <input type="file" name="imagem_ficheiro" accept="image/*" required={!data?.evento} class="file-input" onchange={mostrarNome} />
+                    </div>
                 </div>
-            </div>
 
-            <div class="fields-column">
-                <div class="input-group">
-                    <label for="nome">Nome do Evento</label>
-                    <input type="text" id="nome" name="nome" placeholder="Ex: Matrix" value={data?.evento?.nome_evento || ''} required />
-                </div>
-
-                <div class="input-group">
-                    <label for="descricao">Descrição</label>
-                    <textarea id="descricao" name="descricao" rows="2" placeholder="Resumo..." value={data?.evento?.descricao || ''}></textarea>
-                </div>
-
-                <div class="input-group">
-                    <label for="tipo">Tipo</label>
-                    <input type="text" id="tipo" name="tipo" placeholder="Cinema, Teatro" value={data?.evento?.tipo_espectaculo || ''} required />
-                </div>
-
-                <div class="sessions-section">
-                    <div class="sessions-header">
-                        <label>Sessões Agendadas</label>
-                        <button type="button" class="add-btn" on:click={adicionarSessao}>+ Nova Sessão</button>
+                <div class="fields-column">
+                    <div class="input-group">
+                        <label for="nome">Nome do Evento</label>
+                        <input type="text" id="nome" name="nome" placeholder="Ex: Matrix" value={data?.evento?.nome_evento || ''} required />
                     </div>
 
-                    <div class="sessions-list">
-                        {#each sessoes as sessao, i}
-                            <div class="session-item">
-                                <select bind:value={sessao.id_sala} required>
-                                    <option value="" disabled>Sala</option>
-                                    {#each salas as s}
-                                        <option value={s.id_sala}>{s.nome_sala}</option>
-                                    {/each}
-                                </select>
-                                <input type="date" bind:value={sessao.data} required />
-                                <input type="time" bind:value={sessao.hora} required />
-                                <input type="time" bind:value={sessao.duracao} title="Duração" required />
+                    <div class="input-group">
+                        <label for="descricao">Descrição</label>
+                        <textarea id="descricao" name="descricao" rows="2" placeholder="Resumo..." value={data?.evento?.descricao || ''}></textarea>
+                    </div>
 
-                                <div class="ticket-limit">
+                    <div class="input-group">
+                        <label for="tipo">Tipo</label>
+                        <input type="text" id="tipo" name="tipo" placeholder="Cinema, Teatro" value={data?.evento?.tipo_espectaculo || ''} required />
+                    </div>
 
-                                <input type="number" bind:value={sessao.limite_bilhetes} min="1" max="10" title="Limite de bilhetes por compra" required />
-                            </div>
-                                
-                                {#if sessoes.length > 1}
-                                    <button type="button" class="del-btn" on:click={() => removerSessao(i)}>&times;</button>
+                    <div class="sessions-section">
+                        <div class="sessions-header">
+                            <label>Sessões Agendadas</label>
+                            <button type="button" class="add-btn" onclick={adicionarSessao}>+ Nova Sessão</button>
+                        </div>
+
+                        <div class="sessions-list">
+                            {#each sessoes as sessao, i}
+                            <div class="session-card">
+                                <div class="session-item">
+                                    <select bind:value={sessao.id_sala} onchange={() => carregarZonas(sessao.id_sala, i)} required>
+                                        <option value="" disabled>Selecionar Sala</option>
+                                        {#each salas as s}
+                                            <option value={s.id_sala}>{s.nome_sala}</option>
+                                        {/each}
+                                    </select>
+                                    <input type="date" bind:value={sessao.data} required />
+                                    <input type="time" bind:value={sessao.hora} required />
+                                    <input type="time" bind:value={sessao.duracao} title="Duração" required />
+                                    
+                                    {#if sessoes.length > 1}
+                                        <button type="button" class="del-btn" onclick={() => removerSessao(i)}>&times;</button>
+                                    {/if}
+                                </div>
+
+                                {#if sessao.id_sala && zonasPorSala[sessao.id_sala]}
+                                    <div class="price-grid">
+                                        <p class="price-title">Preços por Setor:</p>
+                                        <div class="zones-container">
+                                            {#each zonasPorSala[sessao.id_sala] as zona}
+                                                <div class="zone-price-input">
+                                                    <label>{zona.nome_zona}</label>
+                                                    <div class="currency-input">
+                                                        <input 
+                                                            type="number" 
+                                                            step="0.01" 
+                                                            bind:value={sessao.precos[zona.id_zona]} 
+                                                            placeholder="0.00"
+                                                        />
+                                                        <span>€</span>
+                                                    </div>
+                                                </div>
+                                            {/each}
+                                        </div>
+                                    </div>
                                 {/if}
                             </div>
                         {/each}
+                        </div>
                     </div>
+
+                    <button type="submit" class="call-to-action">
+                        {data?.evento ? 'Guardar Alterações' : 'Publicar Espetáculo'}
+                    </button>
                 </div>
-
-                <button type="submit" class="call-to-action">
-                    {data?.evento ? 'Guardar Alterações' : 'Publicar Espetáculo'}
-                </button>
             </div>
-        </div>
-    </form>
-</main>
+        </form>
+    </main>
 
-{#if form?.message}
-<div class="toast-overlay">
-    <div class="toast-card">
-        <span class="toast-icon">❌</span>
-        <div class="toast-content">
-            <strong>Erro de Agendamento</strong>
-            <p>{form.message}</p>
+    {#if form?.message}
+    <div class="toast-overlay">
+        <div class="toast-card">
+            <span class="toast-icon">❌</span>
+            <div class="toast-content">
+                <strong>Erro de Agendamento</strong>
+                <p>{form.message}</p>
+            </div>
+            <button class="toast-close" onclick={() => form.message = null}>&times;</button>
         </div>
-        <button class="toast-close" on:click={() => form.message = null}>&times;</button>
     </div>
-</div>
-{/if}
+    {/if}
 
 <style>
 :root {
@@ -367,6 +439,57 @@ input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
     filter: invert(1) brightness(0.8);
     cursor: pointer;
+}
+
+.session-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #3f3f5f;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.price-grid {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #3f3f5f;
+}
+
+.price-title {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.zones-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.zone-price-input label {
+    font-size: 0.75rem;
+    display: block;
+    margin-bottom: 5px;
+    color: #94a3b8;
+}
+
+.currency-input {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.currency-input input {
+    width: 100%;
+    padding: 5px 8px;
+}
+
+.currency-input span {
+    color: #10b981;
+    font-weight: bold;
 }
 
 

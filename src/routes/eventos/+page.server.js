@@ -4,7 +4,6 @@ import { query } from '$lib/db';
 /** @type {import('./$types').PageServerLoad} */
 export async function load() {
     try {
-        // 1️⃣ Buscar eventos
         const eventos = await query(`
             SELECT DISTINCT e.*
                 FROM Eventos e
@@ -13,7 +12,6 @@ export async function load() {
                 ORDER BY e.id_eventos DESC
                 `);
 
-        // 2️⃣ Buscar sessões com nome da sala
         const sessoes = await query(`
             SELECT 
                 es.id_eventos,
@@ -26,7 +24,6 @@ export async function load() {
             JOIN Sala s ON es.id_sala = s.id_sala
             `);
 
-        // 3️⃣ Agrupar sessões dentro dos eventos
         const mapa = {};
         for (const ev of eventos) {
             mapa[ev.id_eventos] = {
@@ -43,7 +40,6 @@ export async function load() {
 
         const listaFinal = Object.values(mapa);
 
-        // 4️⃣ Tipos distintos (categorias)
         const tiposBD = await query(`
             SELECT DISTINCT tipo_espectaculo 
             FROM Eventos 
