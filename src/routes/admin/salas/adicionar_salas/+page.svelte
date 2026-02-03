@@ -52,7 +52,7 @@
 <main class="hero-section">
     <div class="form-container">
 
-        <button type="button" class="close-btn" on:click={() => goto('/admin/salas')}>
+        <button type="button" class="close-btn" on:click={() => goto('/admin')}>
             &times;
         </button>
 
