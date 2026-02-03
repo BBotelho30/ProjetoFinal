@@ -8,26 +8,27 @@ let currentUserId = null;
 
 // 🔹 Carregar carrinho do utilizador
 function loadCart(userId) {
-    if (!browser || !userId) {
-        carrinho.set([]);
-        return;
-    }
+    if (!browser) return;
 
     currentUserId = userId;
 
-    const saved = localStorage.getItem(`cart_${userId}`);
-    if (saved) {
-        carrinho.set(JSON.parse(saved));
-    } else {
-        carrinho.set([]);
+    if (!userId) {
+        return;
     }
+
+    const saved = localStorage.getItem(`cart_${userId}`);
+    carrinho.set(saved ? JSON.parse(saved) : []);
 }
 
 // 🔹 Limpar carrinho da memória
 function clearCart() {
-    currentUserId = null;
+    if (browser && currentUserId) {
+        localStorage.removeItem(`cart_${currentUserId}`);
+    }
     carrinho.set([]);
 }
+
+
 
 // 🔹 ADICIONAR ITEM AO CARRINHO ✅
 function adicionarAoCarrinho(item) {
@@ -37,11 +38,10 @@ function adicionarAoCarrinho(item) {
 }
 
 // 🔹 REMOVER ITEM DO CARRINHO (opcional, mas útil)
-function removerDoCarrinho(index) {
-    carrinho.update((items) => {
-        items.splice(index, 1);
-        return [...items];
-    });
+function removerDoCarrinho(id_lugar) {
+    carrinho.update((items) =>
+        items.filter(item => item.id_lugar !== id_lugar)
+    );
 }
 
 // 🔹 Guardar automaticamente
@@ -63,6 +63,4 @@ export const cartActions = {
     removerDoCarrinho
 };
 
-// 👉 EXPORTS DIRETOS (para código antigo não quebrar)
-export { adicionarAoCarrinho, removerDoCarrinho };
-
+export { adicionarAoCarrinho, removerDoCarrinho, clearCart };

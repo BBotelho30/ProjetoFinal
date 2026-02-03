@@ -1,97 +1,109 @@
 // @ts-nocheck
 import { query } from '$lib/db';
 import { fail, redirect } from '@sveltejs/kit';
+import PDFDocument from 'pdfkit';
+import { Resend } from 'resend';
+import { env } from '$env/dynamic/private';
 
-/** @type {import('./$types').PageServerLoad} */
-export const load = async ({ url }) => {
-    // Tentamos obter o ID do utilizador via parâmetro ou podes definir um padrão
-    // Para o Load funcionar bem na primeira vez, idealmente o ID viria de um cookie ou locals
-    const id_utilizador = url.searchParams.get('uid'); 
+export const actions = {
+  finalizarReserva: async ({ request }) => {
 
-    if (!id_utilizador) {
-        return { perfil: {} };
+    const resend = new Resend(env.RESEND_API_KEY);
+
+    const formData = await request.formData();
+    const itensRaw = formData.get('itens');
+    const nome = formData.get('nome');
+    const apelido = formData.get('apelido');
+    const email = formData.get('email');
+
+    if (!email || !itensRaw) {
+      return fail(400, { message: 'Dados em falta.' });
     }
+
+    const itens = JSON.parse(itensRaw);
+
+    let utilizador = await query(
+      'SELECT id_utilizador FROM Utilizadores WHERE email = ?',
+      [email]
+    );
+
+    if (!utilizador.length) {
+      await query(
+        'INSERT INTO Utilizadores (email, nome) VALUES (?, ?)',
+        [email, nome]
+      );
+
+      utilizador = await query(
+        'SELECT id_utilizador FROM Utilizadores WHERE email = ?',
+        [email]
+      );
+    }
+
+    const id_utilizador = utilizador[0].id_utilizador;
+
+    let total = 0;
 
     try {
-        const utilizador = await query(
-            'SELECT nome, email, telefone, pais, distrito, morada FROM Utilizadores WHERE id_utilizador = ?',
-            [id_utilizador]
+      for (const item of itens) {
+        total += Number(item.preco) || 0;
+
+        await query(
+          `INSERT INTO Reserva
+           (id_utilizador, id_evento, id_lugar, data_reserva, estado_reserva)
+           VALUES (?, ?, ?, NOW(), 'confirmada')`,
+          [id_utilizador, item.id_evento, item.id_lugar]
         );
+      }
 
-        return {
-            perfil: utilizador[0] || {}
-        };
+      // PDF
+      const pdfBuffer = await new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 40 });
+        const chunks = [];
+
+        doc.on('data', (c) => chunks.push(c));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        doc.fontSize(20).text('Bilhetes QuickSeat', { align: 'center' });
+        doc.moveDown();
+
+        doc.text(`Cliente: ${nome} ${apelido}`);
+        doc.text(`Email: ${email}`);
+        doc.moveDown();
+
+        itens.forEach((item, i) => {
+          doc.text(`Bilhete ${i + 1}`);
+          doc.text(`Evento: ${item.nome_evento}`);
+          doc.text(`Lugar: ${item.fila}${item.num}`);
+          doc.text(`Preço: ${item.preco}€`);
+          doc.moveDown();
+        });
+
+        doc.end();
+      });
+
+      await resend.emails.send({
+        from: env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: email,
+        subject: '🎟️ Compra confirmada - QuickSeat',
+        html: `
+          <h2>Obrigado pela sua compra, ${nome}!</h2>
+          <p>Os seus bilhetes seguem em anexo.</p>
+          <p>Total pago: <strong>${total.toFixed(2)}€</strong></p>
+        `,
+        attachments: [
+          {
+            filename: 'bilhetes.pdf',
+            content: pdfBuffer
+          }
+        ]
+      });
+
     } catch (err) {
-        console.error("Erro ao carregar perfil:", err);
-        return { perfil: {} };
+      console.error(err);
+      return fail(500, { message: 'Erro ao finalizar a compra.' });
     }
-};
 
-/** @type {import('./$types').Actions} */
-export const actions = {
-    finalizarReserva: async ({ request }) => {
-        const formData = await request.formData();
-        
-        // 1. Capturar Dados do Utilizador e Itens
-        const id_utilizador = formData.get('id_utilizador');
-        const itensRaw = formData.get('itens');
-        
-        if (!id_utilizador || !itensRaw) {
-            return fail(400, { message: 'Dados insuficientes para finalizar a reserva.' });
-        }
-
-        const itens = JSON.parse(itensRaw);
-
-        // 2. Capturar Dados de Perfil (Obrigatórios no formulário, mas validamos aqui)
-        const nome = formData.get('nome');
-        const apelido = formData.get('apelido');
-        const telefone = formData.get('telefone');
-        const pais = formData.get('pais');
-        const distrito = formData.get('distrito');
-        const morada = formData.get('morada') || null; // Opcional
-
-        // 3. Capturar Dados de Faturação (Opcionais)
-        const nome_fatura = formData.get('fatura_nome') || null;
-        const nif_fatura = formData.get('fatura_nif') || null;
-        const morada_fatura = formData.get('fatura_morada') || null;
-
-        try {
-            // PASSO A: Atualizar a tabela Utilizadores (Opção B)
-            // Atualizamos o perfil para que na próxima compra os dados já lá estejam
-            await query(
-                `UPDATE Utilizadores 
-                 SET telefone = ?, pais = ?, distrito = ?, morada = ? 
-                 WHERE id_utilizador = ?`,
-                [telefone, pais, distrito, morada, id_utilizador]
-            );
-
-            // PASSO B: Inserir cada bilhete na tabela Reserva
-            // Usamos um loop para gravar todos os itens que estavam no carrinho
-            for (const item of itens) {
-                await query(
-                    `INSERT INTO Reserva 
-                    (id_utilizador, id_lugar, id_evento_sala, nome_fatura, nif_fatura, morada_fatura, preco_pago, data_reserva) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-                    [
-                        id_utilizador, 
-                        item.id_lugar, 
-                        item.id_sessao, 
-                        nome_fatura, 
-                        nif_fatura, 
-                        morada_fatura, 
-                        item.preco
-                    ]
-                );
-
-                // Opcional: Se tiveres uma coluna 'estado' na tabela Lugar, deves marcar como ocupado
-                // await query('UPDATE Lugar SET estado = "ocupado" WHERE id_lugar = ?', [item.id_lugar]);
-            }
-
-            return { success: true };
-
-        } catch (err) {
-            console.error("Erro Crítico na Reserva:", err);
-            return fail(500, { message: 'Erro técnico ao gravar a sua reserva. Por favor, tente novamente.' });
-        }
-    }
+    throw redirect(303, '/compra_concluida');
+  }
 };
