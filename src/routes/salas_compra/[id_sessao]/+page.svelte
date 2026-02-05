@@ -79,6 +79,7 @@ function finalizarSelecao() {
         mX = e.clientX;
         mY = e.clientY;
     }
+    
 </script>
 
 <div class="checkout-page" onmousemove={handleMouseMove} role="presentation">
